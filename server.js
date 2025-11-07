@@ -1,13 +1,13 @@
 const express = require('express');
 const session = require('express-session');
-const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Password from environment (hashed)
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || bcrypt.hashSync('admin123', 10);
+// Password from environment (SHA256 hashed)
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || crypto.createHash('sha256').update('admin123').digest('hex');
 
 // Session middleware
 app.use(session({
@@ -43,7 +43,9 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: 'Password required' });
   }
   
-  const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+  // Hash incoming password with SHA256 and compare
+  const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+  const isValid = passwordHash === ADMIN_PASSWORD_HASH;
   
   if (isValid) {
     req.session.authenticated = true;
