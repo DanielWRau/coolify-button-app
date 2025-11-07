@@ -6,8 +6,10 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Password from environment (SHA256 hashed)
+// Environment variables
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || crypto.createHash('sha256').update('admin123').digest('hex');
+const BROWSER_USE_API_KEY = process.env.BROWSER_USE_API_KEY || '';
+const BROWSER_USE_TASK_ID = process.env.BROWSER_USE_TASK_ID || '';
 
 // Session middleware
 app.use(session({
@@ -72,33 +74,80 @@ app.post('/api/action/:id', requireAuth, async (req, res) => {
   
   console.log(`Action triggered: ${actionId}`);
   
-  // Here you can add your actual action logic
-  // For now, just return success
-  
   try {
-    // Example: Different actions based on ID
     switch(actionId) {
       case '1':
-        console.log('Executing Action 1...');
+        // Browser-Use API Check
+        if (!BROWSER_USE_API_KEY || !BROWSER_USE_TASK_ID) {
+          return res.status(500).json({ 
+            success: false, 
+            error: 'Browser-Use credentials not configured' 
+          });
+        }
+        
+        console.log('Checking Browser-Use Task Status...');
+        
+        // Wait 30 seconds before checking
+        await new Promise(resolve => setTimeout(resolve, 30000));
+        
+        const response = await fetch(`https://api.browser-use.com/api/v1/task/${BROWSER_USE_TASK_ID}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${BROWSER_USE_API_KEY}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+        
+        const taskData = await response.json();
+        
+        res.json({ 
+          success: true, 
+          message: 'Browser-Use task checked',
+          data: {
+            status: taskData.status,
+            task: taskData.task,
+            steps: taskData.steps?.length || 0,
+            live_url: taskData.live_url
+          },
+          timestamp: new Date().toISOString()
+        });
         break;
+        
       case '2':
         console.log('Executing Action 2...');
+        res.json({ 
+          success: true, 
+          message: 'Action 2 executed successfully',
+          timestamp: new Date().toISOString()
+        });
         break;
+        
       case '3':
         console.log('Executing Action 3...');
+        res.json({ 
+          success: true, 
+          message: 'Action 3 executed successfully',
+          timestamp: new Date().toISOString()
+        });
         break;
+        
       default:
         console.log(`Executing Action ${actionId}...`);
+        res.json({ 
+          success: true, 
+          message: `Action ${actionId} executed successfully`,
+          timestamp: new Date().toISOString()
+        });
     }
-    
-    res.json({ 
-      success: true, 
-      message: `Action ${actionId} executed successfully`,
-      timestamp: new Date().toISOString()
-    });
   } catch (error) {
     console.error('Action error:', error);
-    res.status(500).json({ error: 'Action failed' });
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Action failed' 
+    });
   }
 });
 
@@ -110,4 +159,5 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Button Dashboard running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Browser-Use API: ${BROWSER_USE_API_KEY ? 'Configured' : 'Not configured'}`);
 });
