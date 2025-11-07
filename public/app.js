@@ -123,15 +123,10 @@ function updateTime() {
     hour: '2-digit', 
     minute: '2-digit' 
   });
-  const dateString = now.toLocaleDateString('de-DE', { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long' 
-  });
   
   const timeElement = document.getElementById('current-time');
   if (timeElement) {
-    timeElement.textContent = `${timeString} - ${dateString}`;
+    timeElement.textContent = timeString;
   }
 }
 
