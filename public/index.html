@@ -9,45 +9,20 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="login-screen" class="screen">
-    <div class="login-container">
-      <div class="lock-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-      </div>
-      <h1>Button Dashboard</h1>
-      <form id="login-form">
-        <input 
-          type="password" 
-          id="password-input" 
-          placeholder="Passwort eingeben"
-          autocomplete="current-password"
-          required
-        >
-        <button type="submit" class="login-btn">Anmelden</button>
-      </form>
-      <div id="login-error" class="error-message"></div>
-    </div>
-  </div>
-
   <!-- Dashboard Screen -->
-  <div id="dashboard-screen" class="screen" style="display: none;">
+  <div id="dashboard-screen" class="screen">
     <div class="header">
       <div class="time" id="current-time"></div>
-      <button class="logout-btn" onclick="logout()">Abmelden</button>
     </div>
     
     <div class="button-grid">
       <div class="button-item" data-action="1">
         <div class="button-icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
           </svg>
         </div>
-        <div class="button-label">Browser API</div>
+        <div class="button-label">LinkedIn Post</div>
       </div>
       
       <div class="button-item" data-action="2">
@@ -119,6 +94,19 @@
     </div>
     
     <div id="toast" class="toast"></div>
+  </div>
+
+  <!-- Input Modal for Button 1 -->
+  <div id="input-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>LinkedIn Post erstellen</h2>
+      <p>Zu welchem Thema soll der Post erstellt werden?</p>
+      <textarea id="topic-input" placeholder="z.B. AI in der Softwareentwicklung, Remote Work Best Practices..." rows="4"></textarea>
+      <div class="modal-buttons">
+        <button class="modal-btn cancel-btn" onclick="closeModal()">Abbrechen</button>
+        <button class="modal-btn submit-btn" onclick="submitTopic()">Post erstellen</button>
+      </div>
+    </div>
   </div>
 
   <script src="/app.js"></script>
