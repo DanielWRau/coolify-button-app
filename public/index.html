@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Button Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="login-screen" class="screen">
+    <div class="login-container">
+      <div class="lock-icon">Lock</div>
+      <h1>Button Dashboard</h1>
+      <form id="login-form">
+        <input 
+          type="password" 
+          id="password-input" 
+          placeholder="Passwort eingeben"
+          autocomplete="current-password"
+          required
+        >
+        <button type="submit" class="login-btn">Anmelden</button>
+      </form>
+      <div id="login-error" class="error-message"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard Screen -->
+  <div id="dashboard-screen" class="screen" style="display: none;">
+    <div class="header">
+      <div class="time" id="current-time"></div>
+      <button class="logout-btn" onclick="logout()">Abmelden</button>
+    </div>
+    
+    <div class="button-grid">
+      <div class="button-item" data-action="1">
+        <div class="button-icon">Action1</div>
+        <div class="button-label">Aktion 1</div>
+      </div>
+      
+      <div class="button-item" data-action="2">
+        <div class="button-icon">Action2</div>
+        <div class="button-label">Aktion 2</div>
+      </div>
+      
+      <div class="button-item" data-action="3">
+        <div class="button-icon">Action3</div>
+        <div class="button-label">Aktion 3</div>
+      </div>
+      
+      <div class="button-item" data-action="4">
+        <div class="button-icon">Action4</div>
+        <div class="button-label">Aktion 4</div>
+      </div>
+      
+      <div class="button-item" data-action="5">
+        <div class="button-icon">Action5</div>
+        <div class="button-label">Aktion 5</div>
+      </div>
+      
+      <div class="button-item" data-action="6">
+        <div class="button-icon">Action6</div>
+        <div class="button-label">Aktion 6</div>
+      </div>
+      
+      <div class="button-item" data-action="7">
+        <div class="button-icon">Action7</div>
+        <div class="button-label">Aktion 7</div>
+      </div>
+      
+      <div class="button-item" data-action="8">
+        <div class="button-icon">Action8</div>
+        <div class="button-label">Aktion 8</div>
+      </div>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
