@@ -48,7 +48,7 @@ app.post('/api/action/:id', async (req, res) => {
         
         console.log(`Creating LinkedIn post about: ${topic}`);
         
-        // Create Browser-Use task
+        // Create Browser-Use task with correct endpoint
         const taskPrompt = `
 1. Navigate to https://www.linkedin.com/login
 2. Wait 3 seconds for page load
@@ -71,7 +71,8 @@ app.post('/api/action/:id', async (req, res) => {
 15. Task completed successfully
         `.trim();
         
-        const createResponse = await fetch('https://api.browser-use.com/api/v1/task', {
+        // Correct Browser-Use API endpoint: /api/v1/run-task
+        const createResponse = await fetch('https://api.browser-use.com/api/v1/run-task', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${BROWSER_USE_API_KEY}`,
@@ -84,7 +85,9 @@ app.post('/api/action/:id', async (req, res) => {
         });
         
         if (!createResponse.ok) {
-          throw new Error(`Browser-Use API returned ${createResponse.status}`);
+          const errorText = await createResponse.text();
+          console.error('Browser-Use API Error:', errorText);
+          throw new Error(`Browser-Use API returned ${createResponse.status}: ${errorText}`);
         }
         
         const taskData = await createResponse.json();
@@ -147,4 +150,3 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Browser-Use API: ${BROWSER_USE_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`LinkedIn Email: ${LINKEDIN_EMAIL ? 'Configured' : 'Not configured'}`);
-});
