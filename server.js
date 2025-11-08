@@ -27,17 +27,28 @@ const topicGenerationPrompt = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'prompts', 'topic-generation-prompt.json'), 'utf8')
 );
 
-// Scheduled post configuration
+// Scheduled post configuration with ENV support
+const defaultTopics = [
+  'AI in der Softwareentwicklung',
+  'Remote Work Best Practices',
+  'Leadership Lessons',
+  'Tech Trends 2025'
+];
+
+// Parse topics from ENV (comma-separated string)
+function parseTopicsFromEnv(envString) {
+  if (!envString || envString.trim() === '') {
+    return defaultTopics;
+  }
+  return envString.split(',').map(t => t.trim()).filter(t => t.length > 0);
+}
+
+// Initialize config from ENV or defaults
 let scheduledPostConfig = {
-  enabled: false,
-  time: '09:00',
-  timezone: 'Europe/Berlin',
-  topics: [
-    'AI in der Softwareentwicklung',
-    'Remote Work Best Practices',
-    'Leadership Lessons',
-    'Tech Trends 2025'
-  ]
+  enabled: process.env.SCHEDULE_ENABLED === 'true',
+  time: process.env.SCHEDULE_TIME || '09:00',
+  timezone: process.env.SCHEDULE_TIMEZONE || 'Europe/Berlin',
+  topics: parseTopicsFromEnv(process.env.SCHEDULE_TOPICS)
 };
 
 app.use(express.json());
@@ -447,5 +458,14 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Browser-Use API: ${BROWSER_USE_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`OpenRouter API: ${OPENROUTER_API_KEY ? 'Configured' : 'Not configured'}`);
-  console.log(`Scheduled Posts: ${scheduledPostConfig.enabled ? 'ENABLED at ' + scheduledPostConfig.time : 'DISABLED'}`);
+  console.log(`OpenRouter Model: ${OPENROUTER_MODEL}`);
+  console.log('--- Scheduled Posts Configuration ---');
+  console.log(`  Enabled: ${scheduledPostConfig.enabled}`);
+  console.log(`  Time: ${scheduledPostConfig.time} (${scheduledPostConfig.timezone})`);
+  console.log(`  Topics: ${scheduledPostConfig.topics.length} configured`);
+  if (scheduledPostConfig.enabled) {
+    console.log(`  Status: ACTIVE - Next post at ${scheduledPostConfig.time}`);
+  } else {
+    console.log(`  Status: INACTIVE - Set SCHEDULE_ENABLED=true in ENV to activate`);
+  }
 });

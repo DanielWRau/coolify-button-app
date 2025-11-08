@@ -61,6 +61,16 @@ SESSION_SECRET=random_32_chars     # Session encryption key
 BROWSER_USE_API_KEY=xxx            # Browser-Use API key
 LINKEDIN_EMAIL=your@email.com      # LinkedIn credentials
 LINKEDIN_PASSWORD=your_password    # LinkedIn credentials
+
+# OpenRouter AI Configuration
+OPENROUTER_API_KEY=sk-or-xxx      # OpenRouter API key
+OPENROUTER_MODEL=openai/gpt-4.1-mini  # AI model to use
+
+# Scheduled Posts (Persists across redeployments)
+SCHEDULE_ENABLED=true              # Enable daily posts
+SCHEDULE_TIME=09:00                # Post time (24h format)
+SCHEDULE_TIMEZONE=Europe/Berlin    # Timezone
+SCHEDULE_TOPICS=Topic 1,Topic 2,Topic 3  # Comma-separated topics
 ```
 
 **Security Notes:**
@@ -68,6 +78,12 @@ LINKEDIN_PASSWORD=your_password    # LinkedIn credentials
 - Generate random `SESSION_SECRET` (min. 32 characters)
 - Never commit credentials to Git
 - Use Coolify's Secret management
+
+**Scheduled Posts Notes:**
+- ENV configuration persists across Coolify redeployments
+- UI changes override ENV until next deployment
+- Set `SCHEDULE_ENABLED=true` to activate on startup
+- Topics can be managed via Settings UI (Button 6)
 
 ## Authentication
 
