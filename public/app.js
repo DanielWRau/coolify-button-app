@@ -110,6 +110,20 @@ function showToast(message, type = 'success') {
 let currentTopics = [];
 let currentArticles = [];
 
+function switchTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // Update tab content
+  document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
 async function openSettingsModal() {
   try {
     const response = await fetch('/api/schedule');
@@ -261,7 +275,6 @@ async function saveSettings() {
         ? `Posts aktiviert fuer ${time} Uhr`
         : 'Automatische Posts deaktiviert';
       showToast(statusMsg, 'success');
-      closeSettingsModal();
     } else {
       showToast('Speichern fehlgeschlagen', 'error');
     }
@@ -295,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Live update next post info when settings change
+  // Auto-save schedule settings
   const scheduleTime = document.getElementById('schedule-time');
   const scheduleEnabled = document.getElementById('schedule-enabled');
 
@@ -307,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         topics: currentTopics
       };
       updateNextPostInfo(config);
+      saveSettings();
     });
   }
 
@@ -318,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         topics: currentTopics
       };
       updateNextPostInfo(config);
+      saveSettings();
     });
   }
 });
@@ -418,7 +433,7 @@ function renderArticlesList() {
   const listEl = document.getElementById('articles-list');
 
   if (currentArticles.length === 0) {
-    listEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Noch keine Artikel gespeichert</p>';
+    listEl.innerHTML = '';
     return;
   }
 
@@ -427,23 +442,22 @@ function renderArticlesList() {
     .map(article => {
       const date = new Date(article.createdAt).toLocaleDateString('de-DE', {
         day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+        month: '2-digit'
       });
 
       const statusBadge = article.status === 'scheduled'
-        ? `<span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">Geplant</span>`
+        ? `<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 6px; font-size: 10px; margin-left: 6px;">Geplant</span>`
         : '';
 
       return `
         <div class="article-item">
           <h4>${article.topic}${statusBadge}</h4>
           <div class="article-meta">
-            ${date} • ${article.wordCount} Woerter • ${article.tone}
+            ${date} • ${article.wordCount}w
           </div>
           <div class="article-actions">
             <button class="view-btn" onclick="viewArticle('${article.id}')">Ansehen</button>
-            <button class="delete-btn" onclick="deleteArticle('${article.id}')">Loeschen</button>
+            <button class="delete-btn" onclick="deleteArticle('${article.id}')">×</button>
           </div>
         </div>
       `;
@@ -459,44 +473,29 @@ async function viewArticle(id) {
     if (data.success) {
       const article = data.article;
 
-      // Create modal for viewing article
       const modal = document.createElement('div');
       modal.className = 'modal';
       modal.style.display = 'flex';
       modal.innerHTML = `
-        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-          <h2>${article.topic}</h2>
-          <div style="font-size: 14px; color: #666; margin-bottom: 20px;">
-            ${new Date(article.createdAt).toLocaleDateString('de-DE')} •
-            ${article.wordCount} Woerter •
-            ${article.tone}
+        <div class="modal-content" style="max-width: 90%; width: 500px; max-height: 85vh; overflow-y: auto; -webkit-overflow-scrolling: touch; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);">
+          <h2 style="font-size: 18px; margin-bottom: 15px; color: #333;">${article.topic}</h2>
+          <div style="font-size: 12px; color: #666; margin-bottom: 15px;">
+            ${new Date(article.createdAt).toLocaleDateString('de-DE')} • ${article.wordCount}w
           </div>
 
-          <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-            <h3 style="font-size: 16px; margin-bottom: 10px;">Artikel:</h3>
-            <div style="white-space: pre-wrap; line-height: 1.6;">${article.content}</div>
+          <div style="background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; margin-bottom: 12px; max-height: 400px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            <div style="white-space: pre-wrap; line-height: 1.6; font-size: 14px; color: #333;">${article.content}</div>
           </div>
 
-          <details style="margin-bottom: 15px;">
-            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 10px;">Gliederung</summary>
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${article.outline}</div>
-          </details>
-
-          <details>
-            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 10px;">Recherche</summary>
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${article.research}</div>
-          </details>
-
-          <div class="modal-buttons" style="margin-top: 20px;">
-            <button class="modal-btn cancel-btn" onclick="this.closest('.modal').remove()">Schliessen</button>
-            <button class="modal-btn submit-btn" onclick="editArticle('${article.id}'); this.closest('.modal').remove();">Bearbeiten</button>
+          <div style="display: flex; gap: 8px; margin-top: 15px;">
+            <button class="action-btn secondary" onclick="editArticle('${article.id}'); this.closest('.modal').remove();">Bearbeiten</button>
+            <button class="action-btn primary" onclick="this.closest('.modal').remove()">OK</button>
           </div>
         </div>
       `;
 
       document.body.appendChild(modal);
 
-      // Close on background click
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           modal.remove();
@@ -517,23 +516,23 @@ async function editArticle(id) {
     if (data.success) {
       const article = data.article;
 
-      // Create edit modal
       const modal = document.createElement('div');
       modal.className = 'modal';
       modal.style.display = 'flex';
       modal.innerHTML = `
-        <div class="modal-content" style="max-width: 800px;">
-          <h2>Artikel bearbeiten</h2>
-          <p style="color: #666; margin-bottom: 20px;">${article.topic}</p>
+        <div class="modal-content" style="max-width: 90%; width: 500px; max-height: 85vh; overflow-y: auto; -webkit-overflow-scrolling: touch; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);">
+          <h2 style="font-size: 18px; margin-bottom: 10px; color: #333;">Bearbeiten</h2>
+          <p style="color: #666; margin-bottom: 15px; font-size: 14px;">${article.topic}</p>
 
           <textarea
             id="edit-article-content"
-            style="width: 100%; min-height: 400px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical;"
+            class="settings-input"
+            style="min-height: 350px; resize: vertical; font-size: 14px; line-height: 1.6;"
           >${article.content}</textarea>
 
-          <div class="modal-buttons" style="margin-top: 20px;">
-            <button class="modal-btn cancel-btn" onclick="this.closest('.modal').remove()">Abbrechen</button>
-            <button class="modal-btn submit-btn" onclick="saveArticleEdit('${article.id}')">Speichern</button>
+          <div style="display: flex; gap: 8px; margin-top: 15px;">
+            <button class="action-btn secondary" onclick="this.closest('.modal').remove()">Abbrechen</button>
+            <button class="action-btn primary" onclick="saveArticleEdit('${article.id}')">Speichern</button>
           </div>
         </div>
       `;

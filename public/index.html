@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Button Dashboard</title>
@@ -121,79 +121,65 @@
     <div class="modal-content settings-modal">
       <h2>Einstellungen</h2>
 
-      <!-- Article Generation Section -->
-      <div class="settings-section">
-        <h3>Artikel Generierung</h3>
-
-        <div class="setting-row">
-          <label for="article-topic">Thema fur Artikel:</label>
-          <input type="text" id="article-topic" placeholder="z.B. Future of AI Development">
-        </div>
-
-        <div class="setting-row">
-          <label for="article-length">Lange:</label>
-          <select id="article-length">
-            <option value="short">Kurz (500-800 Worter)</option>
-            <option value="medium" selected>Mittel (800-1500 Worter)</option>
-            <option value="long">Lang (1500-2500 Worter)</option>
-          </select>
-        </div>
-
-        <div class="setting-row">
-          <label for="article-tone">Ton:</label>
-          <select id="article-tone">
-            <option value="professional" selected>Professionell</option>
-            <option value="casual">Casual</option>
-            <option value="inspirational">Inspirierend</option>
-            <option value="educational">Lehrreich</option>
-          </select>
-        </div>
-
-        <button class="generate-article-btn" onclick="generateArticle()">
-          Artikel generieren (3 Schritte: Research > Outline > Write)
-        </button>
-
-        <div id="article-status" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+      <!-- Navigation Tabs -->
+      <div class="settings-tabs">
+        <button class="tab-btn active" onclick="switchTab('articles')">Artikel</button>
+        <button class="tab-btn" onclick="switchTab('schedule')">Posts</button>
       </div>
 
-      <!-- Article Library Section -->
-      <div class="settings-section">
-        <h3>Gespeicherte Artikel (<span id="article-count">0</span>)</h3>
-        <div id="articles-list" class="articles-list"></div>
-      </div>
-
-      <!-- Scheduled Posts Section -->
-      <div class="settings-section">
-        <h3>Tagliche LinkedIn Posts</h3>
-
-        <div class="setting-row">
-          <label for="schedule-enabled">
-            <input type="checkbox" id="schedule-enabled">
-            Automatische Posts aktivieren
-          </label>
-        </div>
-
-        <div class="setting-row">
-          <label for="schedule-time">Uhrzeit (täglich):</label>
-          <input type="time" id="schedule-time" value="09:00">
-          <small id="next-post-info" style="display: block; margin-top: 8px; opacity: 0.8; font-size: 12px;"></small>
-        </div>
-
-        <div class="setting-row">
-          <label>Themen-Pool:</label>
-          <button class="generate-topics-btn" onclick="generateTopicsAI()">AI Themen generieren</button>
-          <div id="topics-list" class="topics-list"></div>
-          <div class="topic-add">
-            <input type="text" id="new-topic-input" placeholder="Neues Thema hinzufuegen...">
-            <button class="modal-btn" onclick="addTopic()">+</button>
+      <!-- Articles Tab -->
+      <div id="articles-tab" class="settings-tab active">
+        <!-- Article Generation -->
+        <div class="settings-card">
+          <input type="text" id="article-topic" class="settings-input" placeholder="Thema eingeben...">
+          <div class="settings-row">
+            <select id="article-length" class="settings-select">
+              <option value="short">Kurz</option>
+              <option value="medium" selected>Mittel</option>
+              <option value="long">Lang</option>
+            </select>
+            <select id="article-tone" class="settings-select">
+              <option value="professional" selected>Pro</option>
+              <option value="casual">Casual</option>
+              <option value="inspirational">Inspire</option>
+              <option value="educational">Edu</option>
+            </select>
           </div>
+          <button class="action-btn primary" onclick="generateArticle()">Generieren</button>
+          <div id="article-status" class="status-text"></div>
+        </div>
+
+        <!-- Article List -->
+        <div class="settings-section-title">
+          Artikel (<span id="article-count">0</span>)
+        </div>
+        <div id="articles-list" class="card-list"></div>
+      </div>
+
+      <!-- Schedule Tab -->
+      <div id="schedule-tab" class="settings-tab">
+        <div class="settings-card">
+          <label class="toggle-label">
+            <input type="checkbox" id="schedule-enabled">
+            <span>Auto-Posts aktivieren</span>
+          </label>
+
+          <input type="time" id="schedule-time" class="settings-input" value="09:00">
+          <div id="next-post-info" class="status-text"></div>
+
+          <button class="action-btn secondary" onclick="generateTopicsAI()">AI Themen</button>
+        </div>
+
+        <div class="settings-section-title">Themen</div>
+        <div id="topics-list" class="card-list"></div>
+
+        <div class="topic-add">
+          <input type="text" id="new-topic-input" class="settings-input" placeholder="Neues Thema...">
+          <button class="action-btn primary" onclick="addTopic()">+</button>
         </div>
       </div>
 
-      <div class="modal-buttons">
-        <button class="modal-btn cancel-btn" onclick="closeSettingsModal()">Abbrechen</button>
-        <button class="modal-btn submit-btn" onclick="saveSettings()">Speichern</button>
-      </div>
+      <button class="modal-close-btn" onclick="closeSettingsModal()">Schliessen</button>
     </div>
   </div>
 
