@@ -31,6 +31,10 @@ In Coolify unter "Environment Variables" folgende Variablen setzen:
 PORT=3000
 NODE_ENV=production
 
+# App Authentication (WICHTIG!)
+APP_PASSWORD=dein_sicheres_passwort
+SESSION_SECRET=generiere_einen_zufaelligen_string_mindestens_32_zeichen
+
 # Browser-Use API
 BROWSER_USE_API_KEY=dein_browser_use_api_key
 
@@ -39,13 +43,30 @@ LINKEDIN_EMAIL=deine_email@example.com
 LINKEDIN_PASSWORD=dein_linkedin_passwort
 ```
 
-**Wichtig:** Alle Variablen als "Secret" markieren (außer PORT und NODE_ENV).
+**Wichtig:** 
+- Alle Variablen als "Secret" markieren (außer PORT und NODE_ENV)
+- `APP_PASSWORD`: Setze ein starkes Passwort für den App-Zugang
+- `SESSION_SECRET`: Generiere einen zufälligen String (min. 32 Zeichen)
+
+**Session Secret generieren:**
+```bash
+# Linux/Mac
+openssl rand -base64 32
+
+# Windows PowerShell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+```
 
 ### 3. Domain und SSL konfigurieren
 
 1. In Coolify unter "Domains" deine Domain eintragen (z.B. `buttons.a-g-e-n-t.de`)
 2. SSL wird automatisch via Let's Encrypt konfiguriert
 3. HTTP → HTTPS Redirect aktivieren
+
+**WICHTIG:** 
+- **KEINE** Coolify Basic Auth aktivieren! 
+- Die App hat eigene Session-basierte Authentifizierung
+- Coolify Basic Auth verursacht SSL-Fehler (`SSL_ERROR_INTERNAL_ERROR_ALERT`)
 
 ### 4. Port-Konfiguration
 
@@ -59,23 +80,41 @@ LINKEDIN_PASSWORD=dein_linkedin_passwort
 2. Build-Logs beobachten
 3. Nach erfolgreichem Deployment App über Domain testen
 
+### 6. Ersten Login durchführen
+
+1. Navigiere zu `https://buttons.a-g-e-n-t.de`
+2. Login-Seite erscheint automatisch
+3. Gib `APP_PASSWORD` ein
+4. Session bleibt 24 Stunden gültig
+
 ## Troubleshooting
 
 ### SSL_ERROR_INTERNAL_ERROR_ALERT
 
-Dieser Fehler tritt auf, wenn:
+**Ursache:** Coolify Basic Auth ist aktiviert und verursacht TLS-Handshake-Fehler
 
-1. **SSL-Zertifikat noch nicht generiert:** 
-   - Warte 2-5 Minuten nach dem ersten Deployment
-   - Coolify generiert automatisch Let's Encrypt Zertifikate
+**Lösung:**
+1. In Coolify → Application → "Security" Tab
+2. Basic Authentication **DEAKTIVIEREN**
+3. App nutzt eigene Session-basierte Auth
 
-2. **Domain-DNS nicht korrekt:**
-   - Prüfe, ob DNS A-Record auf Coolify-Server IP zeigt
-   - DNS-Propagation kann bis zu 24h dauern
+### Container startet nicht ("exited")
 
-3. **Port-Mapping-Problem:**
-   - Stelle sicher, dass Container Port 3000 ist
-   - Coolify mappt automatisch auf öffentlichen Port
+**Prüfen:**
+1. Logs in Coolify ansehen
+2. Häufigste Ursachen:
+   - Syntax-Fehler im Code
+   - Fehlende Environment-Variablen
+   - Port bereits belegt
+
+**Debug:**
+```bash
+# Container-Logs ansehen
+docker logs <container-name>
+
+# Container Status prüfen
+docker ps -a | grep button
+```
 
 ### App startet nicht
 
@@ -88,6 +127,12 @@ Dieser Fehler tritt auf, wenn:
 1. **API Key prüfen:** Ist `BROWSER_USE_API_KEY` korrekt gesetzt?
 2. **API Limits:** Hast du noch API Credits?
 3. **LinkedIn Credentials:** Email und Passwort korrekt?
+4. **Endpoint:** Aktueller Endpoint ist `/api/v1/run-task`
+
+### Session läuft ab
+
+**Normal:** Sessions sind 24 Stunden gültig
+**Lösung:** Einfach erneut einloggen mit `APP_PASSWORD`
 
 ## Monitoring
 
@@ -108,6 +153,15 @@ In Coolify:
 1. Application öffnen
 2. "Logs" Tab
 3. Live-Logs oder historische Logs ansehen
+
+Erwartete Ausgabe beim Start:
+```
+Button Dashboard running on port 3000
+Environment: production
+Browser-Use API: Configured
+LinkedIn Email: Configured
+App Password: Custom
+```
 
 ## Updates
 
@@ -132,14 +186,40 @@ Coolify kann automatisch deployen bei Git-Push:
 1. **Secrets schützen:**
    - Alle API Keys und Passwörter als "Secret" markieren
    - Niemals in Code oder Logs committen
+   - Starke Passwörter verwenden (min. 12 Zeichen)
 
 2. **HTTPS erzwingen:**
    - Immer HTTPS Redirect aktivieren
-   - HTTP-Only Cookies für Sessions
+   - Secure Cookies für Production
 
-3. **Environment trennen:**
+3. **Session Security:**
+   - SESSION_SECRET regelmäßig rotieren
+   - Session-Timeout bei 24h belassen
+
+4. **Environment trennen:**
    - Separate Environments für Development und Production
    - Verschiedene API Keys pro Environment
+
+5. **KEINE Coolify Basic Auth:**
+   - Verursacht SSL-Probleme
+   - App hat eigene Authentifizierung
+
+## Authentication Flow
+
+### Wie es funktioniert
+
+1. **Erster Zugriff:** Benutzer wird zu `/login` umgeleitet
+2. **Password-Check:** Server prüft gegen `APP_PASSWORD`
+3. **Session erstellen:** Bei Erfolg wird Session-Cookie gesetzt
+4. **Zugriff erlaubt:** User hat 24h Zugriff auf Dashboard
+5. **Logout:** Optional via `/auth/logout` (Feature kann erweitert werden)
+
+### Session-Details
+
+- **Cookie Name:** Automatisch von express-session
+- **Dauer:** 24 Stunden (86400000ms)
+- **Secure:** Nur HTTPS in Production
+- **HttpOnly:** Ja (XSS-Schutz)
 
 ## Nächste Schritte
 
@@ -155,9 +235,29 @@ Coolify kann automatisch deployen bei Git-Push:
    - Regelmäßige Backups der Environment-Variablen
    - Disaster Recovery Plan
 
+4. **Multi-User Support (Optional):**
+   - Erweitere Auth-System für mehrere Benutzer
+   - User-Management Interface
+
 ## Support
 
 Bei Problemen:
 1. Coolify Logs prüfen
 2. Browser-Use API Status prüfen
 3. Domain-DNS-Konfiguration verifizieren
+4. SSL-Zertifikat Status in Coolify checken
+5. **WICHTIG:** Coolify Basic Auth deaktivieren!
+
+## Quick Checklist
+
+- [ ] Repository in Coolify verbunden
+- [ ] Alle Environment-Variablen gesetzt
+- [ ] `APP_PASSWORD` geändert (nicht "changeme123")
+- [ ] `SESSION_SECRET` generiert (min. 32 Zeichen)
+- [ ] Domain konfiguriert
+- [ ] SSL-Zertifikat generiert
+- [ ] **Coolify Basic Auth DEAKTIVIERT**
+- [ ] HTTPS Redirect aktiviert
+- [ ] Health Check funktioniert
+- [ ] Erster Login erfolgreich
+- [ ] Browser-Use API getestet
