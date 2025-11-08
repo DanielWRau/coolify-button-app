@@ -1,7 +1,3 @@
-// Update time every second
-setInterval(updateTime, 1000);
-updateTime();
-
 // Button click handlers
 document.querySelectorAll('.button-item').forEach(button => {
   button.addEventListener('click', async () => {
@@ -98,20 +94,6 @@ async function executeAction(actionId, label, button) {
     // Remove loading state
     button.style.opacity = '1';
     button.style.pointerEvents = 'auto';
-  }
-}
-
-// Update time display
-function updateTime() {
-  const now = new Date();
-  const timeString = now.toLocaleTimeString('de-DE', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
-  
-  const timeElement = document.getElementById('current-time');
-  if (timeElement) {
-    timeElement.textContent = timeString;
   }
 }
 
