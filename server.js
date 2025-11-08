@@ -454,8 +454,12 @@ app.get('*', requireAuth, (req, res) => {
 });
 
 app.listen(PORT, () => {
+  const now = new Date();
+  const berlinTime = now.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });
+
   console.log(`Button Dashboard running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`System Time (Berlin): ${berlinTime}`);
   console.log(`Browser-Use API: ${BROWSER_USE_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`OpenRouter API: ${OPENROUTER_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`OpenRouter Model: ${OPENROUTER_MODEL}`);
@@ -464,7 +468,8 @@ app.listen(PORT, () => {
   console.log(`  Time: ${scheduledPostConfig.time} (${scheduledPostConfig.timezone})`);
   console.log(`  Topics: ${scheduledPostConfig.topics.length} configured`);
   if (scheduledPostConfig.enabled) {
-    console.log(`  Status: ACTIVE - Next post at ${scheduledPostConfig.time}`);
+    console.log(`  Status: ACTIVE - Next post at ${scheduledPostConfig.time} ${scheduledPostConfig.timezone}`);
+    console.log(`  Cron Expression: ${scheduledPostConfig.time.split(':')[1]} ${scheduledPostConfig.time.split(':')[0]} * * *`);
   } else {
     console.log(`  Status: INACTIVE - Set SCHEDULE_ENABLED=true in ENV to activate`);
   }

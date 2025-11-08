@@ -68,8 +68,8 @@ OPENROUTER_MODEL=openai/gpt-4.1-mini  # AI model to use
 
 # Scheduled Posts (Persists across redeployments)
 SCHEDULE_ENABLED=true              # Enable daily posts
-SCHEDULE_TIME=09:00                # Post time (24h format)
-SCHEDULE_TIMEZONE=Europe/Berlin    # Timezone
+SCHEDULE_TIME=09:00                # Post time (24h MEZ/MESZ)
+SCHEDULE_TIMEZONE=Europe/Berlin    # Timezone (Docker container set to Berlin)
 SCHEDULE_TOPICS=Topic 1,Topic 2,Topic 3  # Comma-separated topics
 ```
 
@@ -84,6 +84,8 @@ SCHEDULE_TOPICS=Topic 1,Topic 2,Topic 3  # Comma-separated topics
 - UI changes override ENV until next deployment
 - Set `SCHEDULE_ENABLED=true` to activate on startup
 - Topics can be managed via Settings UI (Button 6)
+- **Timezone:** Docker container is set to Europe/Berlin (MEZ/MESZ)
+- **Time:** `SCHEDULE_TIME=09:00` means 9 AM German time
 
 ## Authentication
 
