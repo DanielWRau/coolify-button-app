@@ -448,9 +448,40 @@ function renderArticlesList() {
         month: '2-digit'
       });
 
-      const statusBadge = article.status === 'scheduled'
-        ? `<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 6px; font-size: 10px; margin-left: 6px;">Geplant</span>`
-        : '';
+      const isScheduled = article.status === 'scheduled';
+      const isPosted = article.status === 'posted';
+
+      let statusBadge = '';
+      if (isScheduled) {
+        const schedTime = new Date(article.scheduledFor).toLocaleString('de-DE', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        statusBadge = `<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 6px; font-size: 10px; margin-left: 6px;">${schedTime}</span>`;
+      } else if (isPosted) {
+        statusBadge = `<span style="background: #6366f1; color: white; padding: 3px 8px; border-radius: 6px; font-size: 10px; margin-left: 6px;">Gepostet</span>`;
+      }
+
+      let actionButtons = '';
+      if (isPosted) {
+        actionButtons = `
+          <button class="view-btn" onclick="viewArticle('${article.id}')">Ansehen</button>
+          <button class="delete-btn" onclick="deleteArticle('${article.id}')">×</button>
+        `;
+      } else if (isScheduled) {
+        actionButtons = `
+          <button class="view-btn" onclick="viewArticle('${article.id}')">Ansehen</button>
+          <button class="delete-btn" onclick="cancelSchedule('${article.id}')">Abbrechen</button>
+        `;
+      } else {
+        actionButtons = `
+          <button class="view-btn" onclick="viewArticle('${article.id}')">Ansehen</button>
+          <button class="post-btn" onclick="openScheduleModal('${article.id}', '${article.topic}')">Planen</button>
+          <button class="post-now-btn" onclick="postArticleNow('${article.id}')">Posten</button>
+        `;
+      }
 
       return `
         <div class="article-item">
@@ -459,8 +490,7 @@ function renderArticlesList() {
             ${date} • ${article.wordCount}w
           </div>
           <div class="article-actions">
-            <button class="view-btn" onclick="viewArticle('${article.id}')">Ansehen</button>
-            <button class="delete-btn" onclick="deleteArticle('${article.id}')">×</button>
+            ${actionButtons}
           </div>
         </div>
       `;
@@ -601,6 +631,125 @@ async function deleteArticle(id) {
     }
   } catch (error) {
     console.error('Failed to delete article:', error);
+    showToast('Verbindungsfehler', 'error');
+  }
+}
+
+// Article Posting Functions
+
+function openScheduleModal(id, topic) {
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const dateStr = tomorrow.toISOString().slice(0, 16);
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 90%; width: 400px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);">
+      <h2 style="font-size: 18px; margin-bottom: 15px;">Artikel planen</h2>
+      <p style="color: #666; margin-bottom: 15px; font-size: 14px;">${topic}</p>
+
+      <input
+        type="datetime-local"
+        id="schedule-datetime"
+        class="settings-input"
+        value="${dateStr}"
+        min="${now.toISOString().slice(0, 16)}"
+      >
+
+      <div style="display: flex; gap: 8px; margin-top: 15px;">
+        <button class="action-btn secondary" onclick="this.closest('.modal').remove()">Abbrechen</button>
+        <button class="action-btn primary" onclick="confirmSchedule('${id}')">Planen</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+}
+
+async function confirmSchedule(id) {
+  const datetime = document.getElementById('schedule-datetime').value;
+
+  if (!datetime) {
+    showToast('Bitte Datum/Zeit auswaehlen', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/articles/${id}/schedule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduledFor: datetime })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('Artikel geplant', 'success');
+      document.querySelector('.modal').remove();
+      await loadArticles();
+    } else {
+      showToast('Fehler beim Planen', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to schedule article:', error);
+    showToast('Verbindungsfehler', 'error');
+  }
+}
+
+async function postArticleNow(id) {
+  if (!confirm('Artikel jetzt zu LinkedIn posten?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/articles/${id}/post`, {
+      method: 'POST'
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('Artikel wird gepostet...', 'success');
+      await loadArticles();
+    } else {
+      showToast(data.error || 'Fehler beim Posten', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to post article:', error);
+    showToast('Verbindungsfehler', 'error');
+  }
+}
+
+async function cancelSchedule(id) {
+  if (!confirm('Planung abbrechen?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/articles/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'draft', scheduledFor: null })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('Planung abgebrochen', 'success');
+      await loadArticles();
+    } else {
+      showToast('Fehler beim Abbrechen', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to cancel schedule:', error);
     showToast('Verbindungsfehler', 'error');
   }
 }

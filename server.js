@@ -296,6 +296,60 @@ if (scheduledPostConfig.enabled) {
   setupScheduledPost();
 }
 
+// Article posting cron job - check every 5 minutes for scheduled articles
+cron.schedule('*/5 * * * *', async () => {
+  console.log('Checking for scheduled articles to post...');
+
+  try {
+    const articles = articleStorage.loadArticles();
+    const now = new Date();
+
+    for (const article of articles) {
+      if (article.status === 'scheduled' && article.scheduledFor) {
+        const schedTime = new Date(article.scheduledFor);
+
+        if (schedTime <= now) {
+          console.log(`Posting scheduled article: ${article.topic}`);
+
+          try {
+            // Post to LinkedIn
+            if (BROWSER_USE_API_URL) {
+              const response = await fetch(`${BROWSER_USE_API_URL}/post`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  content: article.content,
+                  platform: 'linkedin'
+                })
+              });
+
+              if (!response.ok) {
+                throw new Error('Failed to post to LinkedIn');
+              }
+            } else {
+              console.log('Browser-Use not configured, simulating post');
+            }
+
+            // Mark as posted
+            articleStorage.updateArticle(article.id, {
+              status: 'posted',
+              postedAt: new Date().toISOString()
+            });
+
+            console.log(`Successfully posted article: ${article.topic}`);
+          } catch (error) {
+            console.error(`Failed to post article ${article.id}:`, error);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Article posting cron error:', error);
+  }
+}, {
+  timezone: 'Europe/Berlin'
+});
+
 // Public routes
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
@@ -546,6 +600,45 @@ app.post('/api/articles/:id/schedule', requireAuth, (req, res) => {
   }
 
   res.json({ success: true, article: updated });
+});
+
+app.post('/api/articles/:id/post', requireAuth, async (req, res) => {
+  try {
+    const article = articleStorage.getArticle(req.params.id);
+
+    if (!article) {
+      return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    // Post to LinkedIn via Browser-Use
+    if (BROWSER_USE_API_URL) {
+      const response = await fetch(`${BROWSER_USE_API_URL}/post`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: article.content,
+          platform: 'linkedin'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to post to LinkedIn');
+      }
+    } else {
+      console.log('Browser-Use not configured, simulating post');
+    }
+
+    // Mark as posted
+    const updated = articleStorage.updateArticle(req.params.id, {
+      status: 'posted',
+      postedAt: new Date().toISOString()
+    });
+
+    res.json({ success: true, article: updated });
+  } catch (error) {
+    console.error('Post article error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 app.get('/', requireAuth, (req, res) => {

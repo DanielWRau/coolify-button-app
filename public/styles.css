@@ -500,6 +500,16 @@ body {
   color: #fff;
 }
 
+.post-btn {
+  background: #10b981;
+  color: #fff;
+}
+
+.post-now-btn {
+  background: #f59e0b;
+  color: #fff;
+}
+
 .delete-btn {
   background: rgba(255, 71, 87, 0.9);
   color: #fff;
