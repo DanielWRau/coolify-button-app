@@ -2,13 +2,19 @@
 document.querySelectorAll('.button-item').forEach(button => {
   button.addEventListener('click', async () => {
     const actionId = button.dataset.action;
-    
+
     // Special handling for Button 1 (LinkedIn Post)
     if (actionId === '1') {
       openModal();
       return;
     }
-    
+
+    // Special handling for Button 6 (Settings)
+    if (actionId === '6') {
+      openSettingsModal();
+      return;
+    }
+
     // All other buttons
     const label = button.querySelector('.button-label').textContent;
     executeAction(actionId, label, button);
@@ -108,6 +114,99 @@ function showToast(message, type = 'success') {
   }, 3000);
 }
 
+// Settings Modal Functions
+let currentTopics = [];
+
+async function openSettingsModal() {
+  try {
+    const response = await fetch('/api/schedule');
+    const config = await response.json();
+
+    document.getElementById('schedule-enabled').checked = config.enabled;
+    document.getElementById('schedule-time').value = config.time;
+    currentTopics = [...config.topics];
+
+    renderTopicsList();
+    document.getElementById('settings-modal').style.display = 'flex';
+  } catch (error) {
+    console.error('Failed to load settings:', error);
+    showToast('Fehler beim Laden der Einstellungen', 'error');
+  }
+}
+
+function closeSettingsModal() {
+  document.getElementById('settings-modal').style.display = 'none';
+  document.getElementById('new-topic-input').value = '';
+}
+
+function renderTopicsList() {
+  const topicsList = document.getElementById('topics-list');
+  topicsList.innerHTML = currentTopics.map((topic, index) => `
+    <div class="topic-item">
+      <span>${topic}</span>
+      <button class="topic-remove" onclick="removeTopic(${index})">×</button>
+    </div>
+  `).join('');
+}
+
+function addTopic() {
+  const input = document.getElementById('new-topic-input');
+  const topic = input.value.trim();
+
+  if (!topic) {
+    showToast('Bitte Thema eingeben', 'error');
+    return;
+  }
+
+  if (currentTopics.includes(topic)) {
+    showToast('Thema bereits vorhanden', 'error');
+    return;
+  }
+
+  currentTopics.push(topic);
+  renderTopicsList();
+  input.value = '';
+}
+
+function removeTopic(index) {
+  currentTopics.splice(index, 1);
+  renderTopicsList();
+}
+
+async function saveSettings() {
+  const enabled = document.getElementById('schedule-enabled').checked;
+  const time = document.getElementById('schedule-time').value;
+
+  if (currentTopics.length === 0 && enabled) {
+    showToast('Mindestens ein Thema erforderlich', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled,
+        time,
+        topics: currentTopics
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showToast('Einstellungen gespeichert', 'success');
+      closeSettingsModal();
+    } else {
+      showToast('Speichern fehlgeschlagen', 'error');
+    }
+  } catch (error) {
+    console.error('Save settings error:', error);
+    showToast('Verbindungsfehler', 'error');
+  }
+}
+
 // Allow Enter key to submit modal
 document.addEventListener('DOMContentLoaded', () => {
   const topicInput = document.getElementById('topic-input');
@@ -116,6 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         submitTopic();
+      }
+    });
+  }
+
+  const newTopicInput = document.getElementById('new-topic-input');
+  if (newTopicInput) {
+    newTopicInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addTopic();
       }
     });
   }

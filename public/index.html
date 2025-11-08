@@ -116,6 +116,44 @@
     </div>
   </div>
 
+  <!-- Settings Modal for Button 6 -->
+  <div id="settings-modal" class="modal" style="display: none;">
+    <div class="modal-content settings-modal">
+      <h2>Einstellungen</h2>
+
+      <!-- Scheduled Posts Section -->
+      <div class="settings-section">
+        <h3>Tägliche LinkedIn Posts</h3>
+
+        <div class="setting-row">
+          <label for="schedule-enabled">
+            <input type="checkbox" id="schedule-enabled">
+            Automatische Posts aktivieren
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <label for="schedule-time">Uhrzeit (täglich):</label>
+          <input type="time" id="schedule-time" value="09:00">
+        </div>
+
+        <div class="setting-row">
+          <label>Themen-Pool:</label>
+          <div id="topics-list" class="topics-list"></div>
+          <div class="topic-add">
+            <input type="text" id="new-topic-input" placeholder="Neues Thema hinzufügen...">
+            <button class="modal-btn" onclick="addTopic()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="modal-btn cancel-btn" onclick="closeSettingsModal()">Abbrechen</button>
+        <button class="modal-btn submit-btn" onclick="saveSettings()">Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/app.js"></script>
 </body>
 </html>
