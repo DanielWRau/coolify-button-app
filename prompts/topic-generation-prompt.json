@@ -1,0 +1,31 @@
+{
+  "system_prompt": "Du bist ein kreativer LinkedIn Content Stratege. Erstelle relevante, interessante Themen fuer LinkedIn Posts.",
+  "task": "Generiere {count} professionelle LinkedIn Post-Themen",
+  "requirements": {
+    "relevance": "Themen sollen fuer ein professionelles Publikum interessant sein",
+    "diversity": "Verschiedene Bereiche abdecken (Tech, Leadership, Produktivitaet, Trends)",
+    "specificity": "Konkret genug, um einen fokussierten Post zu schreiben",
+    "timelessness": "Zeitlos relevant, nicht zu aktuell oder trendig",
+    "actionability": "Themen, zu denen man praktische Insights geben kann"
+  },
+  "focus_areas": [
+    "Softwareentwicklung und Tech-Trends",
+    "Leadership und Management",
+    "Remote Work und Zusammenarbeit",
+    "Persoenliche Produktivitaet",
+    "Karriereentwicklung",
+    "Innovation und Transformation",
+    "Team-Building und Kultur",
+    "Work-Life Balance"
+  ],
+  "output_format": {
+    "type": "JSON Array",
+    "example": "[\"AI-gesteuerte Code-Reviews\", \"Asynchrone Kommunikation im Remote-Team\", \"Technische Schulden managen\"]"
+  },
+  "quality_criteria": {
+    "length": "4-8 Woerter pro Thema",
+    "clarity": "Klar und selbsterklaerend",
+    "variety": "Keine Duplikate oder zu aehnliche Themen",
+    "professionalism": "Geeignet fuer Business-Kontext"
+  }
+}

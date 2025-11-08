@@ -76,18 +76,14 @@ async function submitTopic() {
 
 // Execute action for buttons 2-8
 async function executeAction(actionId, label, button) {
-  // Add loading state
-  button.style.opacity = '0.5';
-  button.style.pointerEvents = 'none';
-  
   try {
     const response = await fetch(`/api/action/${actionId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
-    
+
     const data = await response.json();
-    
+
     if (data.success) {
       showToast(`${label} erfolgreich ausgefuehrt`, 'success');
     } else {
@@ -96,10 +92,6 @@ async function executeAction(actionId, label, button) {
   } catch (error) {
     console.error('Action error:', error);
     showToast('Verbindungsfehler', 'error');
-  } finally {
-    // Remove loading state
-    button.style.opacity = '1';
-    button.style.pointerEvents = 'auto';
   }
 }
 
@@ -200,6 +192,44 @@ function addTopic() {
 function removeTopic(index) {
   currentTopics.splice(index, 1);
   renderTopicsList();
+}
+
+async function generateTopicsAI() {
+  const btn = document.querySelector('.generate-topics-btn');
+  const originalText = btn.textContent;
+
+  btn.textContent = 'Generiere Themen...';
+  btn.disabled = true;
+
+  try {
+    const response = await fetch('/api/generate-topics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count: 5 })
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.topics.length > 0) {
+      // Add generated topics to current topics (avoid duplicates)
+      data.topics.forEach(topic => {
+        if (!currentTopics.includes(topic)) {
+          currentTopics.push(topic);
+        }
+      });
+
+      renderTopicsList();
+      showToast(`${data.topics.length} Themen generiert`, 'success');
+    } else {
+      showToast('Keine Themen generiert', 'error');
+    }
+  } catch (error) {
+    console.error('Topic generation error:', error);
+    showToast('Fehler bei Themen-Generierung', 'error');
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
 }
 
 async function saveSettings() {

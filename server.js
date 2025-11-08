@@ -16,9 +16,15 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'your-secret-key-change-in-
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
 
-// Load LinkedIn post prompt structure
+// Load prompt structures
 const postPrompt = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'prompts', 'linkedin-post-structure.json'), 'utf8')
+);
+const scheduledPostPrompt = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'prompts', 'scheduled-posts-prompt.json'), 'utf8')
+);
+const topicGenerationPrompt = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'prompts', 'topic-generation-prompt.json'), 'utf8')
 );
 
 // Scheduled post configuration
@@ -63,22 +69,82 @@ const requireAuth = (req, res, next) => {
   res.status(401).json({ success: false, error: 'Not authenticated' });
 };
 
-// AI Post Generation Function
-async function generateLinkedInPost(topic) {
+// AI Topic Generation Function
+async function generateTopics(count = 5) {
   if (!OPENROUTER_API_KEY) {
     throw new Error('OpenRouter API Key not configured');
   }
 
-  const prompt = `${postPrompt.system_prompt}
+  const prompt = `${topicGenerationPrompt.system_prompt}
+
+AUFGABE: ${topicGenerationPrompt.task.replace('{count}', count)}
+
+ANFORDERUNGEN:
+${JSON.stringify(topicGenerationPrompt.requirements, null, 2)}
+
+FOKUS-BEREICHE:
+${topicGenerationPrompt.focus_areas.join('\n')}
+
+QUALITAETSKRITERIEN:
+${JSON.stringify(topicGenerationPrompt.quality_criteria, null, 2)}
+
+Erstelle genau ${count} LinkedIn Post-Themen als JSON Array. Nur das Array zurueckgeben, keine Erklaerungen.`;
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://buttons.a-g-e-n-t.de',
+      'X-Title': 'Button Dashboard'
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.8,
+      max_tokens: 500
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0].message.content.trim();
+
+  // Parse JSON response
+  try {
+    const topics = JSON.parse(content);
+    return Array.isArray(topics) ? topics : [];
+  } catch (e) {
+    console.error('Failed to parse topics JSON:', content);
+    return [];
+  }
+}
+
+// AI Post Generation Function (manual posts)
+async function generateLinkedInPost(topic, useScheduledPrompt = false) {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error('OpenRouter API Key not configured');
+  }
+
+  const promptConfig = useScheduledPrompt ? scheduledPostPrompt : postPrompt;
+
+  const prompt = `${promptConfig.system_prompt}
 
 THEMA: ${topic}
 
 STRUKTUR:
-${JSON.stringify(postPrompt.post_structure, null, 2)}
+${JSON.stringify(promptConfig.post_structure, null, 2)}
 
 RICHTLINIEN:
-${JSON.stringify(postPrompt.guidelines, null, 2)}
+${JSON.stringify(promptConfig.guidelines, null, 2)}
 
+${useScheduledPrompt ? `CONTENT FOKUS:\n${JSON.stringify(promptConfig.content_focus, null, 2)}\n` : ''}
 Erstelle jetzt einen LinkedIn Post zu diesem Thema. Der Post sollte direkt als fertiger Text zurückgegeben werden, ohne zusätzliche Erklärungen.`;
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -170,7 +236,7 @@ async function executeScheduledPost() {
 
     console.log(`[SCHEDULED] Topic: ${randomTopic}`);
 
-    const generatedPost = await generateLinkedInPost(randomTopic);
+    const generatedPost = await generateLinkedInPost(randomTopic, true); // Use scheduled prompt
     console.log(`[SCHEDULED] AI generated post (${generatedPost.length} chars)`);
 
     const result = await postToLinkedIn(generatedPost);
@@ -280,13 +346,25 @@ app.post('/api/schedule', requireAuth, (req, res) => {
   res.json({ success: true, config: scheduledPostConfig });
 });
 
+app.post('/api/generate-topics', requireAuth, async (req, res) => {
+  const { count = 5 } = req.body;
+
+  try {
+    const topics = await generateTopics(count);
+    res.json({ success: true, topics });
+  } catch (error) {
+    console.error('Topic generation error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/generate-post', requireAuth, async (req, res) => {
   const { topic } = req.body;
-  
+
   if (!topic) {
     return res.status(400).json({ success: false, error: 'Topic required' });
   }
-  
+
   try {
     const generatedPost = await generateLinkedInPost(topic);
     res.json({ success: true, content: generatedPost });
