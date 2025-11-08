@@ -108,6 +108,7 @@ function showToast(message, type = 'success') {
 
 // Settings Modal Functions
 let currentTopics = [];
+let currentArticles = [];
 
 async function openSettingsModal() {
   try {
@@ -120,6 +121,7 @@ async function openSettingsModal() {
 
     renderTopicsList();
     updateNextPostInfo(config);
+    loadArticles();
     document.getElementById('settings-modal').style.display = 'flex';
   } catch (error) {
     console.error('Failed to load settings:', error);
@@ -319,3 +321,284 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// Article Generation Functions
+
+async function generateArticle() {
+  const topic = document.getElementById('article-topic').value.trim();
+  const length = document.getElementById('article-length').value;
+  const tone = document.getElementById('article-tone').value;
+
+  if (!topic) {
+    showToast('Bitte Thema eingeben', 'error');
+    return;
+  }
+
+  const btn = document.querySelector('.generate-article-btn');
+  const statusEl = document.getElementById('article-status');
+  const originalText = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = 'Generiere...';
+
+  try {
+    // Step 1: Research
+    statusEl.textContent = 'Schritt 1/3: Recherchiere Thema...';
+    statusEl.style.color = '#667eea';
+
+    const response = await fetch('/api/articles/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        focus: 'praktische Insights und Best Practices',
+        targetLength: length,
+        tone
+      })
+    });
+
+    // Simulate step updates for better UX
+    setTimeout(() => {
+      statusEl.textContent = 'Schritt 2/3: Erstelle Gliederung...';
+    }, 1000);
+
+    setTimeout(() => {
+      statusEl.textContent = 'Schritt 3/3: Schreibe Artikel...';
+    }, 2000);
+
+    const data = await response.json();
+
+    if (data.success) {
+      statusEl.textContent = `Artikel erfolgreich erstellt (${data.article.wordCount} Woerter)`;
+      statusEl.style.color = '#10b981';
+      showToast('Artikel erfolgreich generiert', 'success');
+
+      // Clear input and reload articles
+      document.getElementById('article-topic').value = '';
+      await loadArticles();
+
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        statusEl.textContent = '';
+      }, 3000);
+    } else {
+      statusEl.textContent = 'Fehler bei der Generierung';
+      statusEl.style.color = '#ff4757';
+      showToast(data.error || 'Fehler bei Artikel-Generierung', 'error');
+    }
+  } catch (error) {
+    console.error('Article generation error:', error);
+    statusEl.textContent = 'Verbindungsfehler';
+    statusEl.style.color = '#ff4757';
+    showToast('Verbindungsfehler', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+async function loadArticles() {
+  try {
+    const response = await fetch('/api/articles');
+    const data = await response.json();
+
+    if (data.success) {
+      currentArticles = data.articles;
+      renderArticlesList();
+
+      // Update count
+      document.getElementById('article-count').textContent = currentArticles.length;
+    }
+  } catch (error) {
+    console.error('Failed to load articles:', error);
+  }
+}
+
+function renderArticlesList() {
+  const listEl = document.getElementById('articles-list');
+
+  if (currentArticles.length === 0) {
+    listEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Noch keine Artikel gespeichert</p>';
+    return;
+  }
+
+  listEl.innerHTML = currentArticles
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map(article => {
+      const date = new Date(article.createdAt).toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+
+      const statusBadge = article.status === 'scheduled'
+        ? `<span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">Geplant</span>`
+        : '';
+
+      return `
+        <div class="article-item">
+          <h4>${article.topic}${statusBadge}</h4>
+          <div class="article-meta">
+            ${date} • ${article.wordCount} Woerter • ${article.tone}
+          </div>
+          <div class="article-actions">
+            <button class="view-btn" onclick="viewArticle('${article.id}')">Ansehen</button>
+            <button class="delete-btn" onclick="deleteArticle('${article.id}')">Loeschen</button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+async function viewArticle(id) {
+  try {
+    const response = await fetch(`/api/articles/${id}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const article = data.article;
+
+      // Create modal for viewing article
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.style.display = 'flex';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+          <h2>${article.topic}</h2>
+          <div style="font-size: 14px; color: #666; margin-bottom: 20px;">
+            ${new Date(article.createdAt).toLocaleDateString('de-DE')} •
+            ${article.wordCount} Woerter •
+            ${article.tone}
+          </div>
+
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="font-size: 16px; margin-bottom: 10px;">Artikel:</h3>
+            <div style="white-space: pre-wrap; line-height: 1.6;">${article.content}</div>
+          </div>
+
+          <details style="margin-bottom: 15px;">
+            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 10px;">Gliederung</summary>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${article.outline}</div>
+          </details>
+
+          <details>
+            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 10px;">Recherche</summary>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${article.research}</div>
+          </details>
+
+          <div class="modal-buttons" style="margin-top: 20px;">
+            <button class="modal-btn cancel-btn" onclick="this.closest('.modal').remove()">Schliessen</button>
+            <button class="modal-btn submit-btn" onclick="editArticle('${article.id}'); this.closest('.modal').remove();">Bearbeiten</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Close on background click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Failed to view article:', error);
+    showToast('Fehler beim Laden des Artikels', 'error');
+  }
+}
+
+async function editArticle(id) {
+  try {
+    const response = await fetch(`/api/articles/${id}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const article = data.article;
+
+      // Create edit modal
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.style.display = 'flex';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 800px;">
+          <h2>Artikel bearbeiten</h2>
+          <p style="color: #666; margin-bottom: 20px;">${article.topic}</p>
+
+          <textarea
+            id="edit-article-content"
+            style="width: 100%; min-height: 400px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical;"
+          >${article.content}</textarea>
+
+          <div class="modal-buttons" style="margin-top: 20px;">
+            <button class="modal-btn cancel-btn" onclick="this.closest('.modal').remove()">Abbrechen</button>
+            <button class="modal-btn submit-btn" onclick="saveArticleEdit('${article.id}')">Speichern</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+    }
+  } catch (error) {
+    console.error('Failed to load article for editing:', error);
+    showToast('Fehler beim Laden des Artikels', 'error');
+  }
+}
+
+async function saveArticleEdit(id) {
+  const content = document.getElementById('edit-article-content').value.trim();
+
+  if (!content) {
+    showToast('Artikel darf nicht leer sein', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/articles/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content,
+        wordCount: content.split(/\s+/).length
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('Artikel aktualisiert', 'success');
+      document.querySelector('.modal').remove();
+      await loadArticles();
+    } else {
+      showToast('Fehler beim Speichern', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to save article:', error);
+    showToast('Verbindungsfehler', 'error');
+  }
+}
+
+async function deleteArticle(id) {
+  if (!confirm('Artikel wirklich loeschen?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/articles/${id}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('Artikel geloescht', 'success');
+      await loadArticles();
+    } else {
+      showToast('Fehler beim Loeschen', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to delete article:', error);
+    showToast('Verbindungsfehler', 'error');
+  }
+}

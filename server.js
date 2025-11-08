@@ -4,6 +4,10 @@ const session = require('express-session');
 const cron = require('node-cron');
 const fs = require('fs');
 
+// Import article tools
+const { generateArticle } = require('./lib/article-tools');
+const articleStorage = require('./lib/article-storage');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -443,6 +447,105 @@ app.post('/api/action/:id', requireAuth, async (req, res) => {
       error: error.message || 'Action failed' 
     });
   }
+});
+
+// Article Management Endpoints
+
+// Generate new article
+app.post('/api/articles/generate', requireAuth, async (req, res) => {
+  const { topic, focus, targetLength, tone } = req.body;
+
+  if (!topic) {
+    return res.status(400).json({ success: false, error: 'Topic required' });
+  }
+
+  try {
+    console.log(`Generating article for topic: ${topic}`);
+
+    const result = await generateArticle(topic, {
+      focus: focus || 'practical insights and best practices',
+      targetLength: targetLength || 'medium',
+      tone: tone || 'professional',
+    });
+
+    if (!result.success) {
+      return res.status(500).json({ success: false, error: result.error });
+    }
+
+    // Save article to storage
+    const savedArticle = articleStorage.createArticle(result.article);
+
+    res.json({
+      success: true,
+      article: savedArticle,
+    });
+  } catch (error) {
+    console.error('Article generation error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get all articles
+app.get('/api/articles', requireAuth, (req, res) => {
+  const articles = articleStorage.getAllArticles();
+  res.json({ success: true, articles });
+});
+
+// Get single article
+app.get('/api/articles/:id', requireAuth, (req, res) => {
+  const article = articleStorage.getArticle(req.params.id);
+
+  if (!article) {
+    return res.status(404).json({ success: false, error: 'Article not found' });
+  }
+
+  res.json({ success: true, article });
+});
+
+// Update article
+app.put('/api/articles/:id', requireAuth, (req, res) => {
+  const { content, topic, outline, research } = req.body;
+
+  const updated = articleStorage.updateArticle(req.params.id, {
+    content,
+    topic,
+    outline,
+    research,
+  });
+
+  if (!updated) {
+    return res.status(404).json({ success: false, error: 'Article not found' });
+  }
+
+  res.json({ success: true, article: updated });
+});
+
+// Delete article
+app.delete('/api/articles/:id', requireAuth, (req, res) => {
+  const deleted = articleStorage.deleteArticle(req.params.id);
+
+  if (!deleted) {
+    return res.status(404).json({ success: false, error: 'Article not found' });
+  }
+
+  res.json({ success: true });
+});
+
+// Schedule article
+app.post('/api/articles/:id/schedule', requireAuth, (req, res) => {
+  const { scheduledFor } = req.body;
+
+  if (!scheduledFor) {
+    return res.status(400).json({ success: false, error: 'scheduledFor required' });
+  }
+
+  const updated = articleStorage.scheduleArticle(req.params.id, scheduledFor);
+
+  if (!updated) {
+    return res.status(404).json({ success: false, error: 'Article not found' });
+  }
+
+  res.json({ success: true, article: updated });
 });
 
 app.get('/', requireAuth, (req, res) => {

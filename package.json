@@ -7,9 +7,13 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.64",
+    "@openrouter/ai-sdk-provider": "^1.2.1",
+    "ai": "^5.0.89",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "zod": "^4.1.12"
   },
   "engines": {
     "node": ">=18.0.0"

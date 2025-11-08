@@ -347,6 +347,96 @@ body {
   background: #059669;
 }
 
+.generate-article-btn {
+  width: 100%;
+  padding: 12px;
+  background: #8b5cf6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.generate-article-btn:hover {
+  background: #7c3aed;
+}
+
+.generate-article-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.articles-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.article-item {
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.article-item h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.article-item .article-meta {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.article-item .article-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.article-item .article-actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.article-item .article-actions .view-btn {
+  background: #667eea;
+  color: #fff;
+}
+
+.article-item .article-actions .delete-btn {
+  background: #ff4757;
+  color: #fff;
+}
+
+.setting-row select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f9f9f9;
+  color: #333;
+  font-family: inherit;
+}
+
+.setting-row select:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #fff;
+}
+
 .topics-list {
   margin-bottom: 10px;
   max-height: 200px;

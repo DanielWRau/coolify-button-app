@@ -121,9 +121,50 @@
     <div class="modal-content settings-modal">
       <h2>Einstellungen</h2>
 
+      <!-- Article Generation Section -->
+      <div class="settings-section">
+        <h3>Artikel Generierung</h3>
+
+        <div class="setting-row">
+          <label for="article-topic">Thema fur Artikel:</label>
+          <input type="text" id="article-topic" placeholder="z.B. Future of AI Development">
+        </div>
+
+        <div class="setting-row">
+          <label for="article-length">Lange:</label>
+          <select id="article-length">
+            <option value="short">Kurz (500-800 Worter)</option>
+            <option value="medium" selected>Mittel (800-1500 Worter)</option>
+            <option value="long">Lang (1500-2500 Worter)</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <label for="article-tone">Ton:</label>
+          <select id="article-tone">
+            <option value="professional" selected>Professionell</option>
+            <option value="casual">Casual</option>
+            <option value="inspirational">Inspirierend</option>
+            <option value="educational">Lehrreich</option>
+          </select>
+        </div>
+
+        <button class="generate-article-btn" onclick="generateArticle()">
+          Artikel generieren (3 Schritte: Research > Outline > Write)
+        </button>
+
+        <div id="article-status" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+      </div>
+
+      <!-- Article Library Section -->
+      <div class="settings-section">
+        <h3>Gespeicherte Artikel (<span id="article-count">0</span>)</h3>
+        <div id="articles-list" class="articles-list"></div>
+      </div>
+
       <!-- Scheduled Posts Section -->
       <div class="settings-section">
-        <h3>Tägliche LinkedIn Posts</h3>
+        <h3>Tagliche LinkedIn Posts</h3>
 
         <div class="setting-row">
           <label for="schedule-enabled">
