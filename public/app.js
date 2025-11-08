@@ -9,6 +9,12 @@ document.querySelectorAll('.button-item').forEach(button => {
       return;
     }
 
+    // Special handling for Button 2 (Email Post)
+    if (actionId === '2') {
+      openEmailModal();
+      return;
+    }
+
     // Special handling for Button 6 (Settings)
     if (actionId === '6') {
       openSettingsModal();
@@ -44,6 +50,75 @@ function closeModal() {
 
   modal.style.display = 'none';
   input.value = '';
+}
+
+// Email Post Modal Functions
+function openEmailModal() {
+  const modal = document.getElementById('email-modal');
+  const input = document.getElementById('email-topic-input');
+
+  if (!modal || !input) {
+    console.error('Email modal elements not found');
+    return;
+  }
+
+  modal.style.display = 'flex';
+  input.focus();
+}
+
+function closeEmailModal() {
+  const modal = document.getElementById('email-modal');
+  const input = document.getElementById('email-topic-input');
+
+  if (!modal || !input) return;
+
+  modal.style.display = 'none';
+  input.value = '';
+}
+
+async function submitEmailTopic() {
+  const topic = document.getElementById('email-topic-input').value.trim();
+
+  if (!topic) {
+    showToast('Bitte gib ein Thema ein', 'error');
+    return;
+  }
+
+  closeEmailModal();
+
+  // Show loading toast
+  showToast('LinkedIn Post wird generiert und per Email versendet...', 'success');
+
+  try {
+    const response = await fetch('/api/generate-post-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast(`Post generiert und versendet an: ${data.email.to}`, 'success');
+
+      // Show additional info after a delay
+      setTimeout(() => {
+        showToast(`Email ID: ${data.email.messageId.substring(0, 20)}...`, 'success');
+      }, 3000);
+    } else {
+      showToast(data.error || 'Fehler beim Versenden', 'error');
+
+      // Show additional details if available
+      if (data.details) {
+        setTimeout(() => {
+          showToast(data.details, 'error');
+        }, 2000);
+      }
+    }
+  } catch (error) {
+    console.error('Email post error:', error);
+    showToast('Verbindungsfehler', 'error');
+  }
 }
 
 // Submit topic and create LinkedIn post
@@ -319,6 +394,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         submitTopic();
+      }
+    });
+  }
+
+  // Email topic input modal - Enter to submit
+  const emailTopicInput = document.getElementById('email-topic-input');
+  if (emailTopicInput) {
+    emailTopicInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitEmailTopic();
       }
     });
   }
@@ -640,7 +726,12 @@ async function saveArticleEdit(id) {
 }
 
 async function deleteArticle(id) {
-  if (!confirm('Artikel wirklich loeschen?')) {
+  const confirmed = await showConfirmModal(
+    'Artikel löschen?',
+    'Möchtest du den Artikel wirklich unwiderruflich löschen?'
+  );
+
+  if (!confirmed) {
     return;
   }
 
@@ -719,21 +810,42 @@ async function confirmSchedule(id) {
 
     const data = await response.json();
 
-    if (data.success) {
-      showToast('Artikel geplant', 'success');
+    if (response.ok && data.success) {
+      showToast('Artikel erfolgreich geplant', 'success');
       document.querySelector('.modal').remove();
       await loadArticles();
     } else {
-      showToast('Fehler beim Planen', 'error');
+      // Handle different error types
+      let errorMessage = 'Fehler beim Planen';
+
+      if (response.status === 404) {
+        errorMessage = 'Artikel nicht gefunden. Bitte Seite neu laden.';
+      } else if (response.status === 400) {
+        errorMessage = data.error || 'Ungültige Zeitangabe';
+      } else if (data.error) {
+        errorMessage = data.error;
+      }
+
+      showToast(errorMessage, 'error');
+
+      // Reload articles to sync state
+      if (response.status === 404) {
+        await loadArticles();
+      }
     }
   } catch (error) {
     console.error('Failed to schedule article:', error);
-    showToast('Verbindungsfehler', 'error');
+    showToast('Verbindungsfehler beim Planen', 'error');
   }
 }
 
 async function postArticleNow(id) {
-  if (!confirm('Artikel jetzt zu LinkedIn posten?')) {
+  const confirmed = await showConfirmModal(
+    'Artikel zu LinkedIn posten?',
+    'Möchtest du den Artikel jetzt sofort zu LinkedIn posten?'
+  );
+
+  if (!confirmed) {
     return;
   }
 
@@ -744,20 +856,84 @@ async function postArticleNow(id) {
 
     const data = await response.json();
 
-    if (data.success) {
+    if (response.ok && data.success) {
       showToast('Artikel wird gepostet...', 'success');
       await loadArticles();
     } else {
-      showToast(data.error || 'Fehler beim Posten', 'error');
+      // Handle different error types
+      let errorMessage = 'Fehler beim Posten';
+
+      if (response.status === 404) {
+        errorMessage = 'Artikel nicht gefunden. Bitte Seite neu laden.';
+      } else if (response.status === 400) {
+        errorMessage = data.error || 'Artikel hat keinen Inhalt';
+      } else if (data.error) {
+        errorMessage = data.error;
+      }
+
+      showToast(errorMessage, 'error');
+
+      // Reload articles to sync state
+      if (response.status === 404) {
+        await loadArticles();
+      }
     }
   } catch (error) {
     console.error('Failed to post article:', error);
-    showToast('Verbindungsfehler', 'error');
+    showToast('Verbindungsfehler beim Posten', 'error');
   }
 }
 
+// Generic confirm modal
+function showConfirmModal(title, message) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 90%; width: 350px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);">
+        <h2 style="font-size: 18px; margin-bottom: 15px; color: #333;">${title}</h2>
+        <p style="color: #666; margin-bottom: 20px; font-size: 14px;">${message}</p>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button class="action-btn secondary" onclick="this.closest('.modal').dataset.confirmed = 'false'; this.closest('.modal').remove()">Abbrechen</button>
+          <button class="action-btn primary" onclick="this.closest('.modal').dataset.confirmed = 'true'; this.closest('.modal').remove()">Bestätigen</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Handle modal removal
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach((node) => {
+          if (node === modal) {
+            observer.disconnect();
+            resolve(modal.dataset.confirmed === 'true');
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, { childList: true });
+
+    // Click outside to cancel
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.dataset.confirmed = 'false';
+        modal.remove();
+      }
+    });
+  });
+}
+
 async function cancelSchedule(id) {
-  if (!confirm('Planung abbrechen?')) {
+  const confirmed = await showConfirmModal(
+    'Planung abbrechen?',
+    'Möchtest du die geplante Veröffentlichung wirklich abbrechen?'
+  );
+
+  if (!confirmed) {
     return;
   }
 

@@ -24,15 +24,15 @@
         <div class="button-label">LinkedIn Post</div>
       </div>
       
-      <!-- Button 2: Send -->
-      <div class="button-item disabled" data-action="2">
+      <!-- Button 2: Email Post -->
+      <div class="button-item" data-action="2">
         <div class="button-icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </div>
-        <div class="button-label">Send</div>
+        <div class="button-label">Email Post</div>
       </div>
 
       <!-- Button 3: Zap / Lightning -->
@@ -112,6 +112,19 @@
       <div class="modal-buttons">
         <button class="modal-btn cancel-btn" onclick="closeModal()">Abbrechen</button>
         <button class="modal-btn submit-btn" onclick="submitTopic()">Post erstellen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Post Modal for Button 2 -->
+  <div id="email-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>LinkedIn Post per Email versenden</h2>
+      <p>Zu welchem Thema soll der Post generiert und per Email versendet werden?</p>
+      <textarea id="email-topic-input" placeholder="z.B. AI in der Softwareentwicklung, Remote Work Best Practices..." rows="4"></textarea>
+      <div class="modal-buttons">
+        <button class="modal-btn cancel-btn" onclick="closeEmailModal()">Abbrechen</button>
+        <button class="modal-btn submit-btn" onclick="submitEmailTopic()">Generieren & Versenden</button>
       </div>
     </div>
   </div>

@@ -71,6 +71,14 @@ SCHEDULE_ENABLED=true              # Enable daily posts
 SCHEDULE_TIME=09:00                # Post time (24h MEZ/MESZ)
 SCHEDULE_TIMEZONE=Europe/Berlin    # Timezone (Docker container set to Berlin)
 SCHEDULE_TOPICS=Topic 1,Topic 2,Topic 3  # Comma-separated topics
+
+# SMTP Email Configuration (for Button 2)
+SMTP_HOST=smtp.example.com         # SMTP server hostname
+SMTP_PORT=587                      # SMTP port (587 for TLS, 465 for SSL)
+SMTP_USER=your_email@example.com   # SMTP username
+SMTP_PASSWORD=your_smtp_password   # SMTP password
+EMAIL_FROM=noreply@example.com     # Sender email address
+EMAIL_TO=recipient@example.com     # Recipient email address
 ```
 
 **Security Notes:**
@@ -111,7 +119,7 @@ SCHEDULE_TOPICS=Topic 1,Topic 2,Topic 3  # Comma-separated topics
 
 Creates and posts AI-generated LinkedIn content:
 
-1. Click "Post Gen" button
+1. Click "LinkedIn Post" button
 2. Enter topic in modal
 3. Browser-Use automation:
    - Logs into LinkedIn
@@ -119,19 +127,37 @@ Creates and posts AI-generated LinkedIn content:
    - Posts to your LinkedIn feed
    - Includes relevant hashtags
 
-### Actions 2-6
+### Action 2: Email Post Generator
+
+Generates LinkedIn post and sends it via email:
+
+1. Click "Email Post" button
+2. Enter topic in modal
+3. System workflow:
+   - Generates professional LinkedIn post using AI
+   - Formats email with styled HTML template
+   - Sends post content to configured email address
+   - Returns success confirmation with email ID
+
+**Requirements:**
+- SMTP server configuration in environment variables
+- Valid email credentials
+- See `.env.example` for SMTP setup
+
+### Actions 3-8
 
 Placeholder buttons ready for customization.
 
 ## API Endpoints
 
 ```
-GET  /health              - Health check (no auth)
-GET  /login               - Login page (no auth)
-POST /auth/login          - Authenticate user
-POST /auth/logout         - Destroy session
-POST /api/action/:id      - Trigger action (auth required)
-GET  /*                   - Dashboard (auth required)
+GET  /health                    - Health check (no auth)
+GET  /login                     - Login page (no auth)
+POST /auth/login                - Authenticate user
+POST /auth/logout               - Destroy session
+POST /api/action/:id            - Trigger action (auth required)
+POST /api/generate-post-email   - Generate post and send email (auth required)
+GET  /*                         - Dashboard (auth required)
 ```
 
 ### Example Request

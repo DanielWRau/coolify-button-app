@@ -1,8 +1,11 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
 const cron = require('node-cron');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 // Import article tools
 const { generateArticle } = require('./lib/article-tools');
@@ -19,6 +22,14 @@ const APP_PASSWORD = process.env.APP_PASSWORD || 'changeme123';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'your-secret-key-change-in-production';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+
+// SMTP Configuration
+const SMTP_HOST = process.env.SMTP_HOST || '';
+const SMTP_PORT = process.env.SMTP_PORT || 587;
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || SMTP_USER;
+const EMAIL_TO = process.env.EMAIL_TO || '';
 
 // Load prompt structures
 const postPrompt = JSON.parse(
@@ -236,6 +247,55 @@ ${content}
   return await response.json();
 }
 
+// SMTP Transporter Setup
+function createEmailTransporter() {
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASSWORD) {
+    throw new Error('SMTP configuration incomplete');
+  }
+
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: parseInt(SMTP_PORT),
+    secure: SMTP_PORT === '465', // true for 465, false for other ports
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASSWORD,
+    },
+  });
+}
+
+// Send LinkedIn Post via Email
+async function sendLinkedInPostEmail(topic, postContent) {
+  const transporter = createEmailTransporter();
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: EMAIL_TO,
+    subject: `LinkedIn Post: ${topic}`,
+    text: `LinkedIn Post zum Thema: ${topic}\n\n---\n\n${postContent}\n\n---\n\nGeneriert am: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #0077b5; border-bottom: 3px solid #0077b5; padding-bottom: 10px;">
+          LinkedIn Post: ${topic}
+        </h2>
+
+        <div style="background: #f3f6f8; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <pre style="font-family: inherit; white-space: pre-wrap; line-height: 1.6; margin: 0;">${postContent}</pre>
+        </div>
+
+        <div style="color: #666; font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+          <p>Generiert am: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}</p>
+          <p style="margin: 0;">Automatisch erstellt von Button Dashboard</p>
+        </div>
+      </div>
+    `
+  };
+
+  const info = await transporter.sendMail(mailOptions);
+  console.log(`Email sent: ${info.messageId}`);
+  return info;
+}
+
 // Scheduled Post Execution
 async function executeScheduledPost() {
   if (!scheduledPostConfig.enabled) {
@@ -430,6 +490,45 @@ app.post('/api/generate-post', requireAuth, async (req, res) => {
   }
 });
 
+// Generate LinkedIn Post and Send via Email
+app.post('/api/generate-post-email', requireAuth, async (req, res) => {
+  const { topic } = req.body;
+
+  if (!topic) {
+    return res.status(400).json({ success: false, error: 'Topic required' });
+  }
+
+  try {
+    console.log(`[EMAIL-POST] Generating LinkedIn post for topic: ${topic}`);
+
+    // Generate LinkedIn post content
+    const generatedPost = await generateLinkedInPost(topic);
+    console.log(`[EMAIL-POST] Post generated (${generatedPost.length} chars)`);
+
+    // Send via email
+    const emailInfo = await sendLinkedInPostEmail(topic, generatedPost);
+    console.log(`[EMAIL-POST] Email sent successfully: ${emailInfo.messageId}`);
+
+    res.json({
+      success: true,
+      content: generatedPost,
+      email: {
+        messageId: emailInfo.messageId,
+        from: EMAIL_FROM,
+        to: EMAIL_TO
+      },
+      message: 'LinkedIn Post erstellt und per Email versendet'
+    });
+  } catch (error) {
+    console.error('[EMAIL-POST] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.message.includes('SMTP') ? 'SMTP-Konfiguration prüfen' : 'Post-Generierung fehlgeschlagen'
+    });
+  }
+});
+
 app.post('/api/action/:id', requireAuth, async (req, res) => {
   const actionId = req.params.id;
   
@@ -594,7 +693,13 @@ app.post('/api/articles/:id/post', requireAuth, async (req, res) => {
     const article = articleStorage.getArticle(req.params.id);
 
     if (!article) {
+      console.log(`Article not found: ${req.params.id}`);
       return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    if (!article.content || article.content.trim() === '') {
+      console.log(`Article ${req.params.id} has no content`);
+      return res.status(400).json({ success: false, error: 'Article has no content to post' });
     }
 
     console.log(`Posting article to LinkedIn: ${article.topic}`);
