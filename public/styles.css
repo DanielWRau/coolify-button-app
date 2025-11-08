@@ -22,6 +22,81 @@ body {
   padding: 20px;
 }
 
+/* Login Screen */
+.login-screen {
+  justify-content: center;
+  align-items: center;
+}
+
+.login-container {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.login-container h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.login-subtitle {
+  font-size: 16px;
+  opacity: 0.9;
+  margin-bottom: 30px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.password-input {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-family: inherit;
+}
+
+.password-input:focus {
+  outline: 2px solid #fff;
+  background: #fff;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  color: #667eea;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.login-btn:active {
+  transform: scale(0.95);
+}
+
+.error-message {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(255, 71, 87, 0.9);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
 /* Dashboard Screen */
 .header {
   display: flex;
@@ -211,6 +286,10 @@ body {
   .modal-content {
     padding: 30px 20px;
   }
+  
+  .login-container {
+    padding: 30px 20px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -221,5 +300,9 @@ body {
   
   .modal-content h2 {
     font-size: 20px;
+  }
+  
+  .login-container h1 {
+    font-size: 28px;
   }
 }
