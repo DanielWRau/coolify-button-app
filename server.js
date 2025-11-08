@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,20 +9,64 @@ const PORT = process.env.PORT || 3000;
 const BROWSER_USE_API_KEY = process.env.BROWSER_USE_API_KEY || '';
 const LINKEDIN_EMAIL = process.env.LINKEDIN_EMAIL || '';
 const LINKEDIN_PASSWORD = process.env.LINKEDIN_PASSWORD || '';
+const APP_PASSWORD = process.env.APP_PASSWORD || 'changeme123'; // Simple password for app access
+const SESSION_SECRET = process.env.SESSION_SECRET || 'your-secret-key-change-in-production';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from public directory
-app.use(express.static('public'));
+// Session middleware
+app.use(session({
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
-// Health check endpoint
+// Auth middleware
+const requireAuth = (req, res, next) => {
+  if (req.session.authenticated) {
+    return next();
+  }
+  res.status(401).sendFile(path.join(__dirname, 'public', 'login.html'));
+};
+
+// Login endpoint
+app.post('/auth/login', (req, res) => {
+  const { password } = req.body;
+  
+  if (password === APP_PASSWORD) {
+    req.session.authenticated = true;
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ success: false, error: 'Invalid password' });
+  }
+});
+
+// Logout endpoint
+app.post('/auth/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
+
+// Health check (no auth required)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Action endpoints
-app.post('/api/action/:id', async (req, res) => {
+// Login page (no auth required)
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Protected: Serve static files
+app.use(express.static('public'), requireAuth);
+
+// Protected: Action endpoints
+app.post('/api/action/:id', requireAuth, async (req, res) => {
   const actionId = req.params.id;
   
   console.log(`Action triggered: ${actionId}`);
@@ -48,7 +93,6 @@ app.post('/api/action/:id', async (req, res) => {
         
         console.log(`Creating LinkedIn post about: ${topic}`);
         
-        // Create Browser-Use task with correct endpoint
         const taskPrompt = `
 1. Navigate to https://www.linkedin.com/login
 2. Wait 3 seconds for page load
@@ -71,7 +115,6 @@ app.post('/api/action/:id', async (req, res) => {
 15. Task completed successfully
         `.trim();
         
-        // Correct Browser-Use API endpoint: /api/v1/run-task
         const createResponse = await fetch('https://api.browser-use.com/api/v1/run-task', {
           method: 'POST',
           headers: {
@@ -140,8 +183,8 @@ app.post('/api/action/:id', async (req, res) => {
   }
 });
 
-// Catch-all route - serve index.html for all other routes
-app.get('*', (req, res) => {
+// Catch-all route - serve index.html for authenticated users
+app.get('*', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -150,4 +193,5 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Browser-Use API: ${BROWSER_USE_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`LinkedIn Email: ${LINKEDIN_EMAIL ? 'Configured' : 'Not configured'}`);
+  console.log(`App Password: ${APP_PASSWORD !== 'changeme123' ? 'Custom' : 'DEFAULT (CHANGE THIS!)'}`);
 });
