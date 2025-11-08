@@ -9,13 +9,13 @@ const PORT = process.env.PORT || 3000;
 const BROWSER_USE_API_KEY = process.env.BROWSER_USE_API_KEY || '';
 const LINKEDIN_EMAIL = process.env.LINKEDIN_EMAIL || '';
 const LINKEDIN_PASSWORD = process.env.LINKEDIN_PASSWORD || '';
-const APP_PASSWORD = process.env.APP_PASSWORD || 'changeme123'; // Simple password for app access
+const APP_PASSWORD = process.env.APP_PASSWORD || 'changeme123';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'your-secret-key-change-in-production';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session middleware
+// Session middleware - BEFORE any routes
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
@@ -28,13 +28,31 @@ app.use(session({
 
 // Auth middleware
 const requireAuth = (req, res, next) => {
-  if (req.session.authenticated) {
+  if (req.session && req.session.authenticated) {
     return next();
   }
-  res.status(401).sendFile(path.join(__dirname, 'public', 'login.html'));
+  
+  // If requesting HTML page, redirect to login
+  if (req.accepts('html')) {
+    return res.redirect('/login');
+  }
+  
+  // If API request, return 401
+  res.status(401).json({ success: false, error: 'Not authenticated' });
 };
 
-// Login endpoint
+// Public routes - NO AUTH REQUIRED
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+app.get('/login', (req, res) => {
+  if (req.session && req.session.authenticated) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
 app.post('/auth/login', (req, res) => {
   const { password } = req.body;
   
@@ -46,26 +64,16 @@ app.post('/auth/login', (req, res) => {
   }
 });
 
-// Logout endpoint
 app.post('/auth/logout', (req, res) => {
   req.session.destroy();
   res.json({ success: true });
 });
 
-// Health check (no auth required)
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
+// Serve static files - PUBLIC (styles, scripts need to load before auth check)
+app.use('/styles.css', express.static(path.join(__dirname, 'public', 'styles.css')));
+app.use('/app.js', express.static(path.join(__dirname, 'public', 'app.js')));
 
-// Login page (no auth required)
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-// Protected: Serve static files
-app.use(express.static('public'), requireAuth);
-
-// Protected: Action endpoints
+// Protected routes - AUTH REQUIRED
 app.post('/api/action/:id', requireAuth, async (req, res) => {
   const actionId = req.params.id;
   
@@ -183,7 +191,12 @@ app.post('/api/action/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Catch-all route - serve index.html for authenticated users
+// Dashboard - AUTH REQUIRED
+app.get('/', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Catch-all - AUTH REQUIRED
 app.get('*', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
