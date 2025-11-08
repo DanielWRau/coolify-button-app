@@ -23,14 +23,27 @@ document.querySelectorAll('.button-item').forEach(button => {
 
 // Open modal for LinkedIn post
 function openModal() {
-  document.getElementById('input-modal').style.display = 'flex';
-  document.getElementById('topic-input').focus();
+  const modal = document.getElementById('input-modal');
+  const input = document.getElementById('topic-input');
+
+  if (!modal || !input) {
+    console.error('Modal elements not found');
+    return;
+  }
+
+  modal.style.display = 'flex';
+  input.focus();
 }
 
 // Close modal
 function closeModal() {
-  document.getElementById('input-modal').style.display = 'none';
-  document.getElementById('topic-input').value = '';
+  const modal = document.getElementById('input-modal');
+  const input = document.getElementById('topic-input');
+
+  if (!modal || !input) return;
+
+  modal.style.display = 'none';
+  input.value = '';
 }
 
 // Submit topic and create LinkedIn post
@@ -129,14 +142,24 @@ async function openSettingsModal() {
     const response = await fetch('/api/schedule');
     const config = await response.json();
 
-    document.getElementById('schedule-enabled').checked = config.enabled;
-    document.getElementById('schedule-time').value = config.time;
+    const scheduleEnabled = document.getElementById('schedule-enabled');
+    const scheduleTime = document.getElementById('schedule-time');
+    const settingsModal = document.getElementById('settings-modal');
+
+    if (!scheduleEnabled || !scheduleTime || !settingsModal) {
+      console.error('Settings elements not found');
+      showToast('Fehler: UI-Elemente nicht gefunden', 'error');
+      return;
+    }
+
+    scheduleEnabled.checked = config.enabled;
+    scheduleTime.value = config.time;
     currentTopics = [...config.topics];
 
     renderTopicsList();
     updateNextPostInfo(config);
     loadArticles();
-    document.getElementById('settings-modal').style.display = 'flex';
+    settingsModal.style.display = 'flex';
   } catch (error) {
     console.error('Failed to load settings:', error);
     showToast('Fehler beim Laden der Einstellungen', 'error');
@@ -437,6 +460,8 @@ async function loadArticles() {
 
 function renderArticlesList() {
   const listEl = document.getElementById('articles-list');
+
+  if (!listEl) return; // Element not in DOM (modal closed)
 
   if (currentArticles.length === 0) {
     listEl.innerHTML = '';

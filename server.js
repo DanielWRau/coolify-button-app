@@ -312,33 +312,20 @@ cron.schedule('*/5 * * * *', async () => {
           console.log(`Posting scheduled article: ${article.topic}`);
 
           try {
-            // Post to LinkedIn
-            if (BROWSER_USE_API_URL) {
-              const response = await fetch(`${BROWSER_USE_API_URL}/post`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  content: article.content,
-                  platform: 'linkedin'
-                })
-              });
-
-              if (!response.ok) {
-                throw new Error('Failed to post to LinkedIn');
-              }
-            } else {
-              console.log('Browser-Use not configured, simulating post');
-            }
+            // Post to LinkedIn using the same function as regular posts
+            const taskData = await postToLinkedIn(article.content);
 
             // Mark as posted
             articleStorage.updateArticle(article.id, {
               status: 'posted',
-              postedAt: new Date().toISOString()
+              postedAt: new Date().toISOString(),
+              taskId: taskData.id
             });
 
-            console.log(`Successfully posted article: ${article.topic}`);
+            console.log(`Successfully posted article: ${article.topic} (Task ID: ${taskData.id})`);
           } catch (error) {
             console.error(`Failed to post article ${article.id}:`, error);
+            // Don't mark as posted if it failed
           }
         }
       }
@@ -610,31 +597,26 @@ app.post('/api/articles/:id/post', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Article not found' });
     }
 
-    // Post to LinkedIn via Browser-Use
-    if (BROWSER_USE_API_URL) {
-      const response = await fetch(`${BROWSER_USE_API_URL}/post`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: article.content,
-          platform: 'linkedin'
-        })
-      });
+    console.log(`Posting article to LinkedIn: ${article.topic}`);
 
-      if (!response.ok) {
-        throw new Error('Failed to post to LinkedIn');
-      }
-    } else {
-      console.log('Browser-Use not configured, simulating post');
-    }
+    // Post to LinkedIn using the same function as regular posts
+    const taskData = await postToLinkedIn(article.content);
 
     // Mark as posted
     const updated = articleStorage.updateArticle(req.params.id, {
       status: 'posted',
-      postedAt: new Date().toISOString()
+      postedAt: new Date().toISOString(),
+      taskId: taskData.id
     });
 
-    res.json({ success: true, article: updated });
+    res.json({
+      success: true,
+      article: updated,
+      task: {
+        id: taskData.id,
+        live_url: taskData.live_url
+      }
+    });
   } catch (error) {
     console.error('Post article error:', error);
     res.status(500).json({ success: false, error: error.message });
