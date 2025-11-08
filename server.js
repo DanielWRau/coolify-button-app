@@ -21,10 +21,10 @@ const postPrompt = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'prompts', 'linkedin-post-structure.json'), 'utf8')
 );
 
-// Scheduled post configuration (stored in memory, can be persisted to DB later)
+// Scheduled post configuration
 let scheduledPostConfig = {
   enabled: false,
-  time: '09:00', // Default: 9:00 AM
+  time: '09:00',
   timezone: 'Europe/Berlin',
   topics: [
     'AI in der Softwareentwicklung',
@@ -37,14 +37,16 @@ let scheduledPostConfig = {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session middleware
+// Session middleware - BEFORE routes
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
+    secure: false, // Set to false for development, Coolify proxy handles HTTPS
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
   }
 }));
 
@@ -162,18 +164,15 @@ async function executeScheduledPost() {
   try {
     console.log('[SCHEDULED] Starting scheduled LinkedIn post...');
     
-    // Pick random topic
     const randomTopic = scheduledPostConfig.topics[
       Math.floor(Math.random() * scheduledPostConfig.topics.length)
     ];
     
     console.log(`[SCHEDULED] Topic: ${randomTopic}`);
     
-    // Generate post with AI
     const generatedPost = await generateLinkedInPost(randomTopic);
     console.log(`[SCHEDULED] AI generated post (${generatedPost.length} chars)`);
     
-    // Post to LinkedIn
     const result = await postToLinkedIn(generatedPost);
     console.log(`[SCHEDULED] Posted successfully! Task ID: ${result.id}`);
     
@@ -185,7 +184,7 @@ async function executeScheduledPost() {
 // Setup Cron Job
 function setupScheduledPost() {
   const [hour, minute] = scheduledPostConfig.time.split(':');
-  const cronExpression = `${minute} ${hour} * * *`; // Every day at specified time
+  const cronExpression = `${minute} ${hour} * * *`;
   
   cron.schedule(cronExpression, executeScheduledPost, {
     timezone: scheduledPostConfig.timezone
@@ -194,7 +193,6 @@ function setupScheduledPost() {
   console.log(`Scheduled LinkedIn post set for ${scheduledPostConfig.time} ${scheduledPostConfig.timezone}`);
 }
 
-// Initialize scheduled post if enabled
 if (scheduledPostConfig.enabled) {
   setupScheduledPost();
 }
@@ -214,10 +212,20 @@ app.get('/login', (req, res) => {
 app.post('/auth/login', (req, res) => {
   const { password } = req.body;
   
+  console.log('Login attempt:', { hasPassword: !!password, sessionID: req.sessionID });
+  
   if (password === APP_PASSWORD) {
     req.session.authenticated = true;
-    res.json({ success: true });
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ success: false, error: 'Session error' });
+      }
+      console.log('Login successful, session saved:', req.sessionID);
+      res.json({ success: true });
+    });
   } else {
+    console.log('Login failed: wrong password');
     res.status(401).json({ success: false, error: 'Invalid password' });
   }
 });
@@ -233,12 +241,10 @@ app.use('/app.js', express.static(path.join(__dirname, 'public', 'app.js')));
 
 // Protected routes
 
-// Get schedule config
 app.get('/api/schedule', requireAuth, (req, res) => {
   res.json(scheduledPostConfig);
 });
 
-// Update schedule config
 app.post('/api/schedule', requireAuth, (req, res) => {
   const { enabled, time, topics } = req.body;
   
@@ -246,7 +252,6 @@ app.post('/api/schedule', requireAuth, (req, res) => {
   if (time) scheduledPostConfig.time = time;
   if (topics && Array.isArray(topics)) scheduledPostConfig.topics = topics;
   
-  // Restart cron job if config changed
   if (scheduledPostConfig.enabled) {
     setupScheduledPost();
   }
@@ -254,7 +259,6 @@ app.post('/api/schedule', requireAuth, (req, res) => {
   res.json({ success: true, config: scheduledPostConfig });
 });
 
-// Generate LinkedIn post with AI
 app.post('/api/generate-post', requireAuth, async (req, res) => {
   const { topic } = req.body;
   
@@ -271,7 +275,6 @@ app.post('/api/generate-post', requireAuth, async (req, res) => {
   }
 });
 
-// Action endpoints
 app.post('/api/action/:id', requireAuth, async (req, res) => {
   const actionId = req.params.id;
   
@@ -280,7 +283,6 @@ app.post('/api/action/:id', requireAuth, async (req, res) => {
   try {
     switch(actionId) {
       case '1':
-        // LinkedIn Post Generator
         const { topic, useAI } = req.body;
         
         if (!topic) {
@@ -292,18 +294,15 @@ app.post('/api/action/:id', requireAuth, async (req, res) => {
         
         let postContent = topic;
         
-        // Generate with AI if requested
         if (useAI) {
           try {
             postContent = await generateLinkedInPost(topic);
             console.log(`AI generated post: ${postContent.substring(0, 100)}...`);
           } catch (aiError) {
             console.error('AI generation failed, using manual topic:', aiError);
-            // Fallback to manual topic if AI fails
           }
         }
         
-        // Post to LinkedIn
         const taskData = await postToLinkedIn(postContent);
         
         res.json({ 
@@ -321,7 +320,6 @@ app.post('/api/action/:id', requireAuth, async (req, res) => {
         break;
         
       default:
-        console.log(`Executing Action ${actionId}...`);
         res.json({ 
           success: true, 
           message: `Action ${actionId} executed successfully`,
@@ -337,12 +335,10 @@ app.post('/api/action/:id', requireAuth, async (req, res) => {
   }
 });
 
-// Dashboard
 app.get('/', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Catch-all
 app.get('*', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -351,7 +347,6 @@ app.listen(PORT, () => {
   console.log(`Button Dashboard running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Browser-Use API: ${BROWSER_USE_API_KEY ? 'Configured' : 'Not configured'}`);
-  console.log(`LinkedIn Email: ${LINKEDIN_EMAIL ? 'Configured' : 'Not configured'}`);
   console.log(`OpenRouter API: ${OPENROUTER_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`Scheduled Posts: ${scheduledPostConfig.enabled ? 'ENABLED at ' + scheduledPostConfig.time : 'DISABLED'}`);
 });
