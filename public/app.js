@@ -211,10 +211,12 @@ function removeTopic(index) {
 }
 
 async function generateTopicsAI() {
-  const btn = document.querySelector('.generate-topics-btn');
+  const btn = document.getElementById('generate-topics-btn');
+  if (!btn) return;
+
   const originalText = btn.textContent;
 
-  btn.textContent = 'Generiere Themen...';
+  btn.textContent = 'Generiere...';
   btn.disabled = true;
 
   try {
@@ -235,6 +237,7 @@ async function generateTopicsAI() {
       });
 
       renderTopicsList();
+      await saveSettings();
       showToast(`${data.topics.length} Themen generiert`, 'success');
     } else {
       showToast('Keine Themen generiert', 'error');
