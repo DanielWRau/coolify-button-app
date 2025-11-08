@@ -163,34 +163,52 @@ async function executeScheduledPost() {
 
   try {
     console.log('[SCHEDULED] Starting scheduled LinkedIn post...');
-    
+
     const randomTopic = scheduledPostConfig.topics[
       Math.floor(Math.random() * scheduledPostConfig.topics.length)
     ];
-    
+
     console.log(`[SCHEDULED] Topic: ${randomTopic}`);
-    
+
     const generatedPost = await generateLinkedInPost(randomTopic);
     console.log(`[SCHEDULED] AI generated post (${generatedPost.length} chars)`);
-    
+
     const result = await postToLinkedIn(generatedPost);
     console.log(`[SCHEDULED] Posted successfully! Task ID: ${result.id}`);
-    
+
   } catch (error) {
     console.error('[SCHEDULED] Error:', error.message);
   }
 }
 
+// Cron Job Reference
+let scheduledCronJob = null;
+
 // Setup Cron Job
 function setupScheduledPost() {
+  // Stop existing cron job if running
+  if (scheduledCronJob) {
+    scheduledCronJob.stop();
+    console.log('Stopped existing cron job');
+  }
+
   const [hour, minute] = scheduledPostConfig.time.split(':');
   const cronExpression = `${minute} ${hour} * * *`;
-  
-  cron.schedule(cronExpression, executeScheduledPost, {
+
+  scheduledCronJob = cron.schedule(cronExpression, executeScheduledPost, {
     timezone: scheduledPostConfig.timezone
   });
-  
+
   console.log(`Scheduled LinkedIn post set for ${scheduledPostConfig.time} ${scheduledPostConfig.timezone}`);
+}
+
+// Stop Scheduled Post
+function stopScheduledPost() {
+  if (scheduledCronJob) {
+    scheduledCronJob.stop();
+    scheduledCronJob = null;
+    console.log('Scheduled LinkedIn post disabled');
+  }
 }
 
 if (scheduledPostConfig.enabled) {
@@ -247,15 +265,18 @@ app.get('/api/schedule', requireAuth, (req, res) => {
 
 app.post('/api/schedule', requireAuth, (req, res) => {
   const { enabled, time, topics } = req.body;
-  
+
   if (enabled !== undefined) scheduledPostConfig.enabled = enabled;
   if (time) scheduledPostConfig.time = time;
   if (topics && Array.isArray(topics)) scheduledPostConfig.topics = topics;
-  
+
+  // Handle cron job based on enabled state
   if (scheduledPostConfig.enabled) {
-    setupScheduledPost();
+    setupScheduledPost(); // This will stop old job and create new one
+  } else {
+    stopScheduledPost(); // Stop the job if disabled
   }
-  
+
   res.json({ success: true, config: scheduledPostConfig });
 });
 

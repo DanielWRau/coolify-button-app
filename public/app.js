@@ -127,10 +127,39 @@ async function openSettingsModal() {
     currentTopics = [...config.topics];
 
     renderTopicsList();
+    updateNextPostInfo(config);
     document.getElementById('settings-modal').style.display = 'flex';
   } catch (error) {
     console.error('Failed to load settings:', error);
     showToast('Fehler beim Laden der Einstellungen', 'error');
+  }
+}
+
+function updateNextPostInfo(config) {
+  const infoEl = document.getElementById('next-post-info');
+
+  if (!config.enabled) {
+    infoEl.textContent = '';
+    return;
+  }
+
+  const now = new Date();
+  const [hour, minute] = config.time.split(':');
+  const nextPost = new Date();
+  nextPost.setHours(parseInt(hour), parseInt(minute), 0, 0);
+
+  // If time already passed today, schedule for tomorrow
+  if (nextPost <= now) {
+    nextPost.setDate(nextPost.getDate() + 1);
+  }
+
+  const timeUntil = Math.floor((nextPost - now) / 1000 / 60 / 60);
+  const randomTopic = config.topics[Math.floor(Math.random() * config.topics.length)];
+
+  if (timeUntil < 24) {
+    infoEl.textContent = `Naechster Post in ca. ${timeUntil}h ueber "${randomTopic}"`;
+  } else {
+    infoEl.textContent = `Naechster Post morgen um ${config.time} Uhr`;
   }
 }
 
@@ -196,7 +225,10 @@ async function saveSettings() {
     const result = await response.json();
 
     if (result.success) {
-      showToast('Einstellungen gespeichert', 'success');
+      const statusMsg = enabled
+        ? `Posts aktiviert fuer ${time} Uhr`
+        : 'Automatische Posts deaktiviert';
+      showToast(statusMsg, 'success');
       closeSettingsModal();
     } else {
       showToast('Speichern fehlgeschlagen', 'error');
@@ -207,8 +239,9 @@ async function saveSettings() {
   }
 }
 
-// Allow Enter key to submit modal
+// Initialize event listeners
 document.addEventListener('DOMContentLoaded', () => {
+  // Topic input modal - Enter to submit
   const topicInput = document.getElementById('topic-input');
   if (topicInput) {
     topicInput.addEventListener('keydown', (e) => {
@@ -219,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // New topic input - Enter to add
   const newTopicInput = document.getElementById('new-topic-input');
   if (newTopicInput) {
     newTopicInput.addEventListener('keydown', (e) => {
@@ -226,6 +260,32 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         addTopic();
       }
+    });
+  }
+
+  // Live update next post info when settings change
+  const scheduleTime = document.getElementById('schedule-time');
+  const scheduleEnabled = document.getElementById('schedule-enabled');
+
+  if (scheduleTime) {
+    scheduleTime.addEventListener('change', () => {
+      const config = {
+        enabled: scheduleEnabled?.checked || false,
+        time: scheduleTime.value,
+        topics: currentTopics
+      };
+      updateNextPostInfo(config);
+    });
+  }
+
+  if (scheduleEnabled) {
+    scheduleEnabled.addEventListener('change', () => {
+      const config = {
+        enabled: scheduleEnabled.checked,
+        time: scheduleTime?.value || '09:00',
+        topics: currentTopics
+      };
+      updateNextPostInfo(config);
     });
   }
 });
