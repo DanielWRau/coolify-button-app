@@ -1,14 +1,15 @@
 {
   "name": "coolify-button-app",
   "version": "1.0.0",
-  "description": "Secure button dashboard for Coolify actions",
+  "description": "Secure button dashboard for Coolify actions with scheduled AI-powered LinkedIn posts",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "express-session": "^1.17.3"
+    "express-session": "^1.17.3",
+    "node-cron": "^3.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
