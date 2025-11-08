@@ -352,8 +352,11 @@ async function generateArticle() {
     return;
   }
 
-  const btn = document.querySelector('.generate-article-btn');
+  const btn = document.getElementById('generate-article-btn');
   const statusEl = document.getElementById('article-status');
+
+  if (!btn) return;
+
   const originalText = btn.textContent;
 
   btn.disabled = true;
