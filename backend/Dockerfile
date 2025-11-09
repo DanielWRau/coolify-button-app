@@ -16,11 +16,6 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Debug: Check what was actually created
-RUN echo "=== Checking standalone output structure ===" && \
-    find .next/standalone -type f -name "server.js" 2>/dev/null || echo "No server.js found" && \
-    ls -la .next/standalone/ 2>/dev/null || echo "No standalone folder"
-
 # Production image - smaller base
 FROM node:20-alpine
 
@@ -29,8 +24,8 @@ RUN apk add --no-cache wget
 
 WORKDIR /app
 
-# Copy standalone build (now consistently at /build/.next/standalone/build)
-COPY --from=builder /build/.next/standalone/build ./
+# Copy standalone build (server.js is directly in .next/standalone/)
+COPY --from=builder /build/.next/standalone ./
 COPY --from=builder /build/.next/static ./.next/static
 COPY --from=builder /build/public ./public
 
