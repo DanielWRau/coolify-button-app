@@ -18,9 +18,9 @@ const api = axios.create({
 
 // Auth
 export const login = (password: string) =>
-  api.post<ApiResponse>('/auth/login', { password });
+  api.post<ApiResponse>('/api/auth/login', { password });
 
-export const logout = () => api.post<ApiResponse>('/auth/logout');
+export const logout = () => api.post<ApiResponse>('/api/auth/logout');
 
 // Schedule
 export const getSchedule = () =>
