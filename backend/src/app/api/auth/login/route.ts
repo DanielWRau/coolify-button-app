@@ -15,6 +15,10 @@ export async function POST(request: NextRequest) {
       // Determine if we're behind HTTPS proxy
       const isHttps = proto === 'https';
 
+      // Extract domain from Host header (without port)
+      const hostHeader = request.headers.get('host') || '';
+      const domain = hostHeader.split(':')[0]; // Remove port if present
+
       // Cookie options
       const cookieOptions = {
         httpOnly: true,
@@ -22,6 +26,7 @@ export async function POST(request: NextRequest) {
         sameSite: 'lax' as const,
         path: '/',
         maxAge: 24 * 60 * 60, // 24 hours
+        domain: domain, // CRITICAL: Set explicit domain from Host header
       };
 
       // CRITICAL: Set cookie on RESPONSE, not on cookies() store!
@@ -32,7 +37,7 @@ export async function POST(request: NextRequest) {
       // Debug: Check Set-Cookie header
       const setCookieHeader = response.headers.get('set-cookie');
       console.log(`[AUTH] ✅ Login successful`);
-      console.log(`[AUTH] 🍪 Cookie config: secure=${cookieOptions.secure}, sameSite=${cookieOptions.sameSite}, path=${cookieOptions.path}, maxAge=${cookieOptions.maxAge}`);
+      console.log(`[AUTH] 🍪 Cookie config: domain=${cookieOptions.domain}, secure=${cookieOptions.secure}, sameSite=${cookieOptions.sameSite}, path=${cookieOptions.path}, maxAge=${cookieOptions.maxAge}`);
       console.log(`[AUTH] 📤 Set-Cookie header: ${setCookieHeader || 'MISSING!'}`);
 
       return response;
