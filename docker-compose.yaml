@@ -42,6 +42,9 @@ services:
     image: ghcr.io/danielwrau/coolify-button-app-frontend:latest
     expose:
       - "80"
+    environment:
+      - PORT=80
+      - NODE_ENV=production
     depends_on:
       backend:
         condition: service_healthy
@@ -56,6 +59,14 @@ services:
       - coolify
     labels:
       - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.http-frontend.entryPoints=http"
+      - "traefik.http.routers.http-frontend.middlewares=redirect-to-https"
+      - "traefik.http.routers.https-frontend.entryPoints=https"
+      - "traefik.http.routers.https-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.https-frontend.tls=true"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 volumes:
   backend-data:
