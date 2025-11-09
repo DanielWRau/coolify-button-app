@@ -43,6 +43,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
     // Post article to LinkedIn via Browser-Use
     // LinkedIn Articles are different from posts - they're long-form content
+    // Note: LinkedIn has a "Write article" button that opens an article editor
+    const task = `Log into LinkedIn with email ${linkedinEmail} and password ${linkedinPassword}. Then click on "Write article" to open the article editor. Create a new article with the title "${article.topic}" and paste this content: "${article.content}". Publish the article.`;
+
     const browserUseResponse = await fetch('https://api.browser-use.com/v1/tasks', {
       method: 'POST',
       headers: {
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        task: `Log into LinkedIn with email ${linkedinEmail} and password ${linkedinPassword}, then create a new article with title "${article.topic}" and this content: "${article.content}". This is a LinkedIn Article (long-form content), not a regular post.`,
+        task,
         timeout: 300000, // 5 minutes for article posting
       }),
     });
