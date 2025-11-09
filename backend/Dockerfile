@@ -28,8 +28,8 @@ RUN npm ci --only=production
 
 # Copy built app from builder
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/package.json ./
 
 # Create data directory
 RUN mkdir -p /app/data
