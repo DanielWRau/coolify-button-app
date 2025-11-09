@@ -5,11 +5,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: coolify-backend
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     environment:
       - NODE_ENV=production
+      - PORT=3001
       - APP_PASSWORD=${APP_PASSWORD:-changeme123}
       - SESSION_SECRET=${SESSION_SECRET:-your-secret-key-change-in-production}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
@@ -37,16 +37,18 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - coolify
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: coolify-frontend
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
@@ -54,7 +56,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - coolify
+    labels:
+      - "coolify.managed=true"
 
 volumes:
   backend-data:
     driver: local
+
+networks:
+  coolify:
+    external: true
