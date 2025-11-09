@@ -1,14 +1,22 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST() {
-  const cookieStore = await cookies();
-  cookieStore.set('authenticated', '', {
+export async function POST(request: NextRequest) {
+  const proto = request.headers.get('x-forwarded-proto') || 'http';
+  const isHttps = proto === 'https';
+
+  console.log('[AUTH] 🚪 Logout request');
+
+  // CRITICAL: Set cookie on RESPONSE to delete it
+  const response = NextResponse.json({ success: true });
+  response.cookies.set('authenticated', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps, // Match login cookie settings
     sameSite: 'lax',
     path: '/',
-    maxAge: 0,
+    maxAge: 0, // Expire immediately
   });
-  return NextResponse.json({ success: true });
+
+  console.log('[AUTH] ✅ Logout successful, cookie deleted');
+
+  return response;
 }

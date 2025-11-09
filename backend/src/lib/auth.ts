@@ -10,8 +10,13 @@ export async function checkAuth(request: NextRequest): Promise<boolean> {
   const hasCookie = !!authenticated;
   const isValid = authenticated?.value === 'true';
 
+  // Log all cookies for debugging
+  const allCookies = await cookies();
+  const cookieNames = Array.from(allCookies.getAll().map(c => c.name));
+
   if (!hasCookie) {
     console.log(`[AUTH] ❌ No auth cookie for ${path}`);
+    console.log(`[AUTH] 🍪 Available cookies: [${cookieNames.join(', ') || 'none'}]`);
   } else if (!isValid) {
     console.log(`[AUTH] ❌ Invalid auth cookie value for ${path}: ${authenticated.value}`);
   } else {

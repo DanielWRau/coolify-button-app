@@ -15,8 +15,7 @@ export async function POST(request: NextRequest) {
       // Determine if we're behind HTTPS proxy
       const isHttps = proto === 'https';
 
-      // Set session cookie
-      const cookieStore = await cookies();
+      // Cookie options
       const cookieOptions = {
         httpOnly: true,
         secure: isHttps, // Use X-Forwarded-Proto instead of NODE_ENV
@@ -25,11 +24,14 @@ export async function POST(request: NextRequest) {
         maxAge: 24 * 60 * 60, // 24 hours
       };
 
-      cookieStore.set('authenticated', 'true', cookieOptions);
+      // CRITICAL: Set cookie on RESPONSE, not on cookies() store!
+      // cookies() is for reading, response.cookies is for setting in HTTP headers
+      const response = NextResponse.json({ success: true });
+      response.cookies.set('authenticated', 'true', cookieOptions);
 
-      console.log(`[AUTH] ✅ Login successful, cookie set (secure: ${cookieOptions.secure}, sameSite: ${cookieOptions.sameSite})`);
+      console.log(`[AUTH] ✅ Login successful, cookie set (secure: ${cookieOptions.secure}, sameSite: ${cookieOptions.sameSite}, path: ${cookieOptions.path})`);
 
-      return NextResponse.json({ success: true });
+      return response;
     } else {
       console.log('[AUTH] ❌ Login failed: Invalid password');
       return NextResponse.json(
