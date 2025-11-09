@@ -31,10 +31,16 @@ export function requireAuth<T extends Record<string, any> = any>(
   handler: (request: NextRequest, context: T) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, context: T): Promise<NextResponse> => {
+    const path = request.nextUrl.pathname;
+
+    // Debug: Log ALL incoming headers
+    const cookieHeader = request.headers.get('cookie');
+    console.log(`[AUTH] 📥 Incoming request to ${path}`);
+    console.log(`[AUTH] 🍪 Cookie header: ${cookieHeader || 'MISSING!'}`);
+
     const isAuthenticated = await checkAuth(request);
 
     if (!isAuthenticated) {
-      const path = request.nextUrl.pathname;
       console.log(`[AUTH] 🚫 Unauthorized access attempt to ${path}`);
 
       return NextResponse.json(

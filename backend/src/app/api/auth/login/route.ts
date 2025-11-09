@@ -29,7 +29,11 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({ success: true });
       response.cookies.set('authenticated', 'true', cookieOptions);
 
-      console.log(`[AUTH] ✅ Login successful, cookie set (secure: ${cookieOptions.secure}, sameSite: ${cookieOptions.sameSite}, path: ${cookieOptions.path})`);
+      // Debug: Check Set-Cookie header
+      const setCookieHeader = response.headers.get('set-cookie');
+      console.log(`[AUTH] ✅ Login successful`);
+      console.log(`[AUTH] 🍪 Cookie config: secure=${cookieOptions.secure}, sameSite=${cookieOptions.sameSite}, path=${cookieOptions.path}, maxAge=${cookieOptions.maxAge}`);
+      console.log(`[AUTH] 📤 Set-Cookie header: ${setCookieHeader || 'MISSING!'}`);
 
       return response;
     } else {
