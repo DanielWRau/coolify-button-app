@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-export async function POST(request: NextRequest, context: RouteParams) {
+async function handler(request: NextRequest, context: RouteParams) {
   try {
     const params = await context.params;
     const { topic, useAI } = await request.json();
@@ -126,3 +127,5 @@ export async function POST(request: NextRequest, context: RouteParams) {
     );
   }
 }
+
+export const POST = requireAuth(handler);

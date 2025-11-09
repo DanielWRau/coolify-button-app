@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth';
 
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const { count = 5 } = await request.json();
 
@@ -76,3 +77,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = requireAuth(handler);

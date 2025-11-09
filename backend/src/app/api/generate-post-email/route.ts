@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { requireAuth } from '@/lib/auth';
 
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const { topic } = await request.json();
 
@@ -137,3 +138,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = requireAuth(handler);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { requireAuth } from '@/lib/auth';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SCHEDULE_FILE = path.join(DATA_DIR, 'schedule.json');
@@ -47,7 +48,7 @@ async function saveScheduleConfig(config: ScheduleConfig) {
   await writeFile(SCHEDULE_FILE, JSON.stringify(config, null, 2), 'utf-8');
 }
 
-export async function GET() {
+async function getHandler() {
   try {
     const config = await getScheduleConfig();
     return NextResponse.json(config);
@@ -60,7 +61,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function postHandler(request: NextRequest) {
   try {
     const updates = await request.json();
     const currentConfig = await getScheduleConfig();
@@ -87,3 +88,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = requireAuth(getHandler);
+export const POST = requireAuth(postHandler);
