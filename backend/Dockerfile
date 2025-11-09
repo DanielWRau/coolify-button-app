@@ -18,10 +18,14 @@ RUN npm run build
 # Production image - smaller base
 FROM node:20-alpine
 
+# Install wget for health checks
+RUN apk add --no-cache wget
+
 WORKDIR /app
 
-# Copy standalone build (includes all dependencies)
-COPY --from=builder /app/.next/standalone ./
+# Copy standalone build from correct nested path
+# Next.js standalone preserves the full directory structure
+COPY --from=builder /app/.next/standalone/claude/code/coolify-button-app/backend ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
