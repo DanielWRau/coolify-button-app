@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
+export async function POST(request: NextRequest, context: RouteParams) {
   try {
+    const params = await context.params;
     const { topic, useAI } = await request.json();
     const actionId = params.id;
 
