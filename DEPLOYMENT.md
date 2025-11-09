@@ -1,263 +1,145 @@
-# Coolify Deployment Guide
+# Deployment Guide
 
-## Deployment-Übersicht
+## 🐳 Container Strategy
 
-Diese App ist für Coolify optimiert und nutzt Docker für das Deployment.
+This project uses **GitHub Actions** to automatically build and push Docker images to GitHub Container Registry (ghcr.io).
 
-## Voraussetzungen
+### Automatic Builds
 
-- Coolify-Installation
-- Domain mit SSL-Zertifikat (automatisch via Coolify/Traefik)
-- Browser-Use API Key (https://www.browser-use.com)
-- LinkedIn Account für automatisierte Posts
+Every push to `main` triggers:
+- ✅ Build of `frontend` and `backend` containers
+- ✅ Push to `ghcr.io/danielwrau/coolify-button-app-frontend:latest`
+- ✅ Push to `ghcr.io/danielwrau/coolify-button-app-backend:latest`
+- ✅ Multi-arch support (amd64 + arm64)
 
-## Deployment-Schritte
+**Images are public** - No authentication needed to pull!
 
-### 1. Projekt in Coolify erstellen
+---
 
-1. In Coolify einloggen
-2. Neues Projekt erstellen oder bestehendes öffnen
-3. "New Resource" → "Public Repository" wählen
-4. Repository URL eingeben: `https://github.com/DanielWRau/coolify-button-app`
-5. Branch: `main`
-6. Build Pack: `Dockerfile`
+## 🚀 Coolify Deployment
 
-### 2. Environment-Variablen konfigurieren
+### 1. Create New Resource
 
-In Coolify unter "Environment Variables" folgende Variablen setzen:
+1. Login to Coolify
+2. **+ New Resource** → **Docker Compose**
+3. Git Source: `DanielWRau/coolify-button-app`
+4. Branch: `main`
+
+### 2. Configure Environment Variables
+
+```env
+# Required
+OPENROUTER_API_KEY=sk-or-v1-...
+APP_PASSWORD=your-secure-password
+SESSION_SECRET=generate-64-char-random-string
+
+# Optional - Custom Model
+OPENROUTER_MODEL=openai/gpt-4o-mini
+
+# Optional - LinkedIn Automation
+BROWSER_USE_API_KEY=your-api-key
+LINKEDIN_EMAIL=your-email
+LINKEDIN_PASSWORD=your-password
+
+# Optional - Email Delivery
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+EMAIL_FROM=your-email@gmail.com
+EMAIL_TO=recipient@example.com
+
+# Optional - Scheduling
+SCHEDULE_ENABLED=false
+SCHEDULE_TIME=09:00
+SCHEDULE_TIMEZONE=Europe/Berlin
+SCHEDULE_TOPICS=AI,Tech,Business
+```
+
+### 3. Set Domain
+
+- Frontend: `app.your-domain.com`
+- Enable HTTPS (automatic Let's Encrypt)
+
+### 4. Deploy
+
+Click **Deploy** - Coolify will:
+1. Pull pre-built images from ghcr.io (fast!)
+2. Start containers with your env vars
+3. Configure reverse proxy automatically
+
+---
+
+## 🛠️ Local Development
+
+Use `docker-compose.dev.yml` for local builds:
 
 ```bash
-# Server Configuration
-PORT=3000
-NODE_ENV=production
+# Build and run locally
+docker-compose -f docker-compose.dev.yml up --build
 
-# App Authentication (WICHTIG!)
-APP_PASSWORD=dein_sicheres_passwort
-SESSION_SECRET=generiere_einen_zufaelligen_string_mindestens_32_zeichen
-
-# Browser-Use API
-BROWSER_USE_API_KEY=dein_browser_use_api_key
-
-# LinkedIn Credentials
-LINKEDIN_EMAIL=deine_email@example.com
-LINKEDIN_PASSWORD=dein_linkedin_passwort
+# Stop
+docker-compose -f docker-compose.dev.yml down
 ```
 
-**Wichtig:** 
-- Alle Variablen als "Secret" markieren (außer PORT und NODE_ENV)
-- `APP_PASSWORD`: Setze ein starkes Passwort für den App-Zugang
-- `SESSION_SECRET`: Generiere einen zufälligen String (min. 32 Zeichen)
+---
 
-**Session Secret generieren:**
-```bash
-# Linux/Mac
-openssl rand -base64 32
+## 📦 Container Images
 
-# Windows PowerShell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+**Frontend**: `ghcr.io/danielwrau/coolify-button-app-frontend:latest`
+- Nginx + React/Vite build
+- ~50MB compressed
+- Port: 80
+
+**Backend**: `ghcr.io/danielwrau/coolify-button-app-backend:latest`
+- Node.js + Next.js
+- ~200MB compressed
+- Port: 3001
+
+---
+
+## 🔄 Update Strategy
+
+**Automatic Updates**:
+1. Push code to `main` branch
+2. GitHub Actions builds new images (5-10 min)
+3. In Coolify: Click **Redeploy** to pull latest images
+
+**Manual Image Tags**:
+```yaml
+# In docker-compose.yml, use specific commit SHA
+image: ghcr.io/danielwrau/coolify-button-app-backend:main-abc1234
 ```
 
-### 3. Domain und SSL konfigurieren
+---
 
-1. In Coolify unter "Domains" deine Domain eintragen (z.B. `buttons.a-g-e-n-t.de`)
-2. SSL wird automatisch via Let's Encrypt konfiguriert
-3. HTTP → HTTPS Redirect aktivieren
+## 🔍 Troubleshooting
 
-**WICHTIG:** 
-- **KEINE** Coolify Basic Auth aktivieren! 
-- Die App hat eigene Session-basierte Authentifizierung
-- Coolify Basic Auth verursacht SSL-Fehler (`SSL_ERROR_INTERNAL_ERROR_ALERT`)
+**Image pull fails**:
+- Images are public, no auth needed
+- Check GitHub Actions completed successfully
+- Verify image name matches exactly
 
-### 4. Port-Konfiguration
+**Container won't start**:
+- Check Coolify logs for missing env vars
+- Ensure `OPENROUTER_API_KEY` is set
+- Verify backend health check passes
 
-- **Container Port:** 3000 (im Dockerfile definiert)
-- **Public Port:** Wird von Coolify automatisch gemappt
-- **Health Check:** `/health` Endpoint
+**Build takes too long in Coolify**:
+- You shouldn't be building in Coolify!
+- Ensure `docker-compose.yml` uses `image:` not `build:`
+- Check GitHub Actions ran successfully
 
-### 5. Deployment starten
+---
 
-1. "Deploy" Button klicken
-2. Build-Logs beobachten
-3. Nach erfolgreichem Deployment App über Domain testen
+## 📊 Resources
 
-### 6. Ersten Login durchführen
+**Expected Usage**:
+- Frontend: ~50MB RAM
+- Backend: ~150-300MB RAM
+- Storage: ~100MB (persistent data)
 
-1. Navigiere zu `https://buttons.a-g-e-n-t.de`
-2. Login-Seite erscheint automatisch
-3. Gib `APP_PASSWORD` ein
-4. Session bleibt 24 Stunden gültig
-
-## Troubleshooting
-
-### SSL_ERROR_INTERNAL_ERROR_ALERT
-
-**Ursache:** Coolify Basic Auth ist aktiviert und verursacht TLS-Handshake-Fehler
-
-**Lösung:**
-1. In Coolify → Application → "Security" Tab
-2. Basic Authentication **DEAKTIVIEREN**
-3. App nutzt eigene Session-basierte Auth
-
-### Container startet nicht ("exited")
-
-**Prüfen:**
-1. Logs in Coolify ansehen
-2. Häufigste Ursachen:
-   - Syntax-Fehler im Code
-   - Fehlende Environment-Variablen
-   - Port bereits belegt
-
-**Debug:**
-```bash
-# Container-Logs ansehen
-docker logs <container-name>
-
-# Container Status prüfen
-docker ps -a | grep button
-```
-
-### App startet nicht
-
-1. **Logs prüfen:** In Coolify unter "Logs" die Container-Logs ansehen
-2. **Environment-Variablen prüfen:** Alle required Variablen gesetzt?
-3. **Health Check:** `/health` Endpoint muss 200 zurückgeben
-
-### Browser-Use API funktioniert nicht
-
-1. **API Key prüfen:** Ist `BROWSER_USE_API_KEY` korrekt gesetzt?
-2. **API Limits:** Hast du noch API Credits?
-3. **LinkedIn Credentials:** Email und Passwort korrekt?
-4. **Endpoint:** Aktueller Endpoint ist `/api/v1/run-task`
-
-### Session läuft ab
-
-**Normal:** Sessions sind 24 Stunden gültig
-**Lösung:** Einfach erneut einloggen mit `APP_PASSWORD`
-
-## Monitoring
-
-### Health Check
-
-```bash
-curl https://buttons.a-g-e-n-t.de/health
-```
-
-Erwartete Antwort:
-```json
-{"status":"ok"}
-```
-
-### Logs ansehen
-
-In Coolify:
-1. Application öffnen
-2. "Logs" Tab
-3. Live-Logs oder historische Logs ansehen
-
-Erwartete Ausgabe beim Start:
-```
-Button Dashboard running on port 3000
-Environment: production
-Browser-Use API: Configured
-LinkedIn Email: Configured
-App Password: Custom
-```
-
-## Updates
-
-### Automatisches Deployment
-
-Coolify kann automatisch deployen bei Git-Push:
-
-1. In Coolify: "Automatic Deployment" aktivieren
-2. Webhook URL kopieren
-3. In GitHub Repository Settings → Webhooks → Webhook URL eintragen
-
-### Manuelles Deployment
-
-1. Code in GitHub pushen
-2. In Coolify "Deploy" Button klicken
-3. Neuer Build startet automatisch
-
-## Sicherheit
-
-### Best Practices
-
-1. **Secrets schützen:**
-   - Alle API Keys und Passwörter als "Secret" markieren
-   - Niemals in Code oder Logs committen
-   - Starke Passwörter verwenden (min. 12 Zeichen)
-
-2. **HTTPS erzwingen:**
-   - Immer HTTPS Redirect aktivieren
-   - Secure Cookies für Production
-
-3. **Session Security:**
-   - SESSION_SECRET regelmäßig rotieren
-   - Session-Timeout bei 24h belassen
-
-4. **Environment trennen:**
-   - Separate Environments für Development und Production
-   - Verschiedene API Keys pro Environment
-
-5. **KEINE Coolify Basic Auth:**
-   - Verursacht SSL-Probleme
-   - App hat eigene Authentifizierung
-
-## Authentication Flow
-
-### Wie es funktioniert
-
-1. **Erster Zugriff:** Benutzer wird zu `/login` umgeleitet
-2. **Password-Check:** Server prüft gegen `APP_PASSWORD`
-3. **Session erstellen:** Bei Erfolg wird Session-Cookie gesetzt
-4. **Zugriff erlaubt:** User hat 24h Zugriff auf Dashboard
-5. **Logout:** Optional via `/auth/logout` (Feature kann erweitert werden)
-
-### Session-Details
-
-- **Cookie Name:** Automatisch von express-session
-- **Dauer:** 24 Stunden (86400000ms)
-- **Secure:** Nur HTTPS in Production
-- **HttpOnly:** Ja (XSS-Schutz)
-
-## Nächste Schritte
-
-1. **Custom Actions hinzufügen:**
-   - Neue Buttons in `public/index.html` und `public/app.js`
-   - API Endpoints in `server.js`
-
-2. **Monitoring erweitern:**
-   - Log-Aggregation Setup
-   - Uptime-Monitoring
-
-3. **Backup-Strategie:**
-   - Regelmäßige Backups der Environment-Variablen
-   - Disaster Recovery Plan
-
-4. **Multi-User Support (Optional):**
-   - Erweitere Auth-System für mehrere Benutzer
-   - User-Management Interface
-
-## Support
-
-Bei Problemen:
-1. Coolify Logs prüfen
-2. Browser-Use API Status prüfen
-3. Domain-DNS-Konfiguration verifizieren
-4. SSL-Zertifikat Status in Coolify checken
-5. **WICHTIG:** Coolify Basic Auth deaktivieren!
-
-## Quick Checklist
-
-- [ ] Repository in Coolify verbunden
-- [ ] Alle Environment-Variablen gesetzt
-- [ ] `APP_PASSWORD` geändert (nicht "changeme123")
-- [ ] `SESSION_SECRET` generiert (min. 32 Zeichen)
-- [ ] Domain konfiguriert
-- [ ] SSL-Zertifikat generiert
-- [ ] **Coolify Basic Auth DEAKTIVIERT**
-- [ ] HTTPS Redirect aktiviert
-- [ ] Health Check funktioniert
-- [ ] Erster Login erfolgreich
-- [ ] Browser-Use API getestet
+**Startup Time**:
+- Image pull: ~30 seconds
+- Container start: ~10 seconds
+- Total: <1 minute
