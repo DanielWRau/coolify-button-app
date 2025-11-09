@@ -1,7 +1,8 @@
 # Backend Dockerfile - Optimized for size
 FROM node:20-alpine AS builder
 
-WORKDIR /app
+# Use /build as working directory to ensure consistent output structure
+WORKDIR /build
 
 # Copy package files
 COPY package*.json ./
@@ -12,7 +13,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the app
+# Build the app (output will be at /build/.next/standalone/build)
 RUN npm run build
 
 # Production image - smaller base
@@ -23,11 +24,10 @@ RUN apk add --no-cache wget
 
 WORKDIR /app
 
-# Copy standalone build from correct nested path
-# Next.js standalone preserves the full directory structure
-COPY --from=builder /app/.next/standalone/claude/code/coolify-button-app/backend ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+# Copy standalone build (now consistently at /build/.next/standalone/build)
+COPY --from=builder /build/.next/standalone/build ./
+COPY --from=builder /build/.next/static ./.next/static
+COPY --from=builder /build/public ./public
 
 # Create data directory
 RUN mkdir -p /app/data
