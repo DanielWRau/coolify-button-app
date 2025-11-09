@@ -69,15 +69,20 @@ let scheduledPostConfig = {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Trust proxy - REQUIRED when behind nginx/reverse proxy
+// This tells Express to trust X-Forwarded-* headers
+app.set('trust proxy', 1);
+
 // Session middleware - BEFORE routes
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: false, // Set to false for development, Coolify proxy handles HTTPS
+  proxy: true, // REQUIRED when behind reverse proxy
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Auto-detect based on environment
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax'
   }
 }));
