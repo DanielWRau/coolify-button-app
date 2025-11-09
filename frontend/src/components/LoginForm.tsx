@@ -34,7 +34,7 @@ export default function LoginForm() {
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <div>
           <h1 className="text-3xl font-bold text-center text-gray-900">
-            Button Dashboard
+            LinkedIn Posts
           </h1>
           <p className="mt-2 text-center text-sm text-gray-600">
             Passwort eingeben
