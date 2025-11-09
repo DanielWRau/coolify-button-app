@@ -13,8 +13,13 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the app (output will be at /build/.next/standalone/build)
+# Build the app
 RUN npm run build
+
+# Debug: Check what was actually created
+RUN echo "=== Checking standalone output structure ===" && \
+    find .next/standalone -type f -name "server.js" 2>/dev/null || echo "No server.js found" && \
+    ls -la .next/standalone/ 2>/dev/null || echo "No standalone folder"
 
 # Production image - smaller base
 FROM node:20-alpine
