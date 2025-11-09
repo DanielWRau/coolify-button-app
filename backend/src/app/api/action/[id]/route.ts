@@ -78,7 +78,7 @@ async function handler(request: NextRequest, context: RouteContext): Promise<Nex
       }
 
       // Call Browser-Use API to post to LinkedIn
-      const browserUseResponse = await fetch('https://api.browser-use.com/v1/tasks', {
+      const browserUseResponse = await fetch('https://api.browser-use.com/api/v1/run-task', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${browserUseApiKey}`,
