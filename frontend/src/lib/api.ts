@@ -16,6 +16,22 @@ const api = axios.create({
   },
 });
 
+// Response interceptor for authentication errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // If unauthorized (401), redirect to login
+    if (error.response?.status === 401) {
+      // Clear any stale auth state
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth
 export const login = (password: string) =>
   api.post<ApiResponse>('/api/auth/login', { password });

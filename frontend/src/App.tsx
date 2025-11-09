@@ -8,7 +8,14 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // Don't retry on authentication errors (401)
+        if (error?.response?.status === 401) {
+          return false;
+        }
+        // Retry once for other errors
+        return failureCount < 1;
+      },
       staleTime: 30000,
     },
   },
