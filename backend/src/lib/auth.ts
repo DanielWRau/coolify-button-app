@@ -30,7 +30,9 @@ export async function checkAuth(request: NextRequest): Promise<boolean> {
 export function requireAuth<T extends Record<string, any> = any>(
   handler: (request: NextRequest, context: T) => Promise<NextResponse>
 ) {
+  console.log('[AUTH] 🔧 requireAuth wrapper created');
   return async (request: NextRequest, context: T): Promise<NextResponse> => {
+    console.log('[AUTH] 🚀 requireAuth wrapper called!');
     const path = request.nextUrl.pathname;
 
     // Debug: Log ALL incoming headers
