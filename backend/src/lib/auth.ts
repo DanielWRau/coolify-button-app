@@ -4,7 +4,21 @@ import { cookies } from 'next/headers';
 export async function checkAuth(request: NextRequest): Promise<boolean> {
   const cookieStore = await cookies();
   const authenticated = cookieStore.get('authenticated');
-  return authenticated?.value === 'true';
+
+  // Log auth check for debugging
+  const path = request.nextUrl.pathname;
+  const hasCookie = !!authenticated;
+  const isValid = authenticated?.value === 'true';
+
+  if (!hasCookie) {
+    console.log(`[AUTH] ❌ No auth cookie for ${path}`);
+  } else if (!isValid) {
+    console.log(`[AUTH] ❌ Invalid auth cookie value for ${path}: ${authenticated.value}`);
+  } else {
+    console.log(`[AUTH] ✅ Valid auth for ${path}`);
+  }
+
+  return isValid;
 }
 
 // Type-safe auth wrapper for Next.js 15 Route Handlers
@@ -15,6 +29,9 @@ export function requireAuth<T extends Record<string, any> = any>(
     const isAuthenticated = await checkAuth(request);
 
     if (!isAuthenticated) {
+      const path = request.nextUrl.pathname;
+      console.log(`[AUTH] 🚫 Unauthorized access attempt to ${path}`);
+
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
