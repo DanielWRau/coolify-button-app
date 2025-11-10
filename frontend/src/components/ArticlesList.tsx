@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Trash2, Calendar, Send, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Calendar, Send, FileText, Eye, X, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -15,6 +15,8 @@ import type { GenerateArticleRequest } from '@/types';
 
 export default function ArticlesList() {
   const [showNew, setShowNew] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [editingSchedule, setEditingSchedule] = useState<string | null>(null);
   const [newArticle, setNewArticle] = useState<GenerateArticleRequest>({
     topic: '',
     focus: 'practical insights and best practices',
@@ -36,6 +38,7 @@ export default function ArticlesList() {
   const generateMutation = useMutation({
     mutationFn: generateArticle,
     onSuccess: () => {
+      // Auto-refresh articles list after generation completes
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       setShowNew(false);
       setNewArticle({
@@ -247,6 +250,16 @@ export default function ArticlesList() {
                   {article.content}
                 </p>
 
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setSelectedArticle(article)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    <Eye size={16} />
+                    Anzeigen
+                  </button>
+                </div>
+
                 <div className="flex gap-2">
                   {article.status === 'draft' && (
                     <>
@@ -280,8 +293,47 @@ export default function ArticlesList() {
                   )}
 
                   {article.status === 'scheduled' && article.scheduledFor && (
-                    <div className="text-sm text-gray-600">
-                      Geplant für: {format(new Date(article.scheduledFor), 'dd.MM.yyyy HH:mm', { locale: de })}
+                    <div className="flex items-center gap-2 flex-1">
+                      {editingSchedule === article.id ? (
+                        <>
+                          <input
+                            type="datetime-local"
+                            value={scheduleDate[article.id] || ''}
+                            onChange={(e) =>
+                              setScheduleDate({ ...scheduleDate, [article.id]: e.target.value })
+                            }
+                            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={() => {
+                              handleSchedule(article.id);
+                              setEditingSchedule(null);
+                            }}
+                            disabled={!scheduleDate[article.id]}
+                            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            Speichern
+                          </button>
+                          <button
+                            onClick={() => setEditingSchedule(null)}
+                            className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                          >
+                            Abbrechen
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-sm text-blue-600">
+                            📅 Geplant für: {format(new Date(article.scheduledFor), 'dd.MM.yyyy HH:mm', { locale: de })}
+                          </div>
+                          <button
+                            onClick={() => setEditingSchedule(article.id)}
+                            className="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <Edit size={14} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -296,6 +348,61 @@ export default function ArticlesList() {
           </div>
         )}
       </main>
+
+      {/* Article View Modal */}
+      {selectedArticle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">{selectedArticle.topic}</h2>
+              <button
+                onClick={() => setSelectedArticle(null)}
+                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              <div className="flex gap-2 mb-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedArticle.status === 'draft'
+                    ? 'bg-gray-100 text-gray-800'
+                    : selectedArticle.status === 'scheduled'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-green-100 text-green-800'
+                }`}>
+                  {selectedArticle.status === 'draft' ? 'Entwurf' :
+                   selectedArticle.status === 'scheduled' ? 'Geplant' : 'Gepostet'}
+                </span>
+                {selectedArticle.wordCount && (
+                  <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+                    {selectedArticle.wordCount} Wörter
+                  </span>
+                )}
+              </div>
+              <div className="prose max-w-none">
+                <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+                  {selectedArticle.content}
+                </div>
+              </div>
+              {selectedArticle.status === 'scheduled' && selectedArticle.scheduledFor && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-blue-800">
+                    📅 Geplant für: {format(new Date(selectedArticle.scheduledFor), 'dd.MM.yyyy HH:mm', { locale: de })}
+                  </p>
+                </div>
+              )}
+              {selectedArticle.status === 'posted' && selectedArticle.postedAt && (
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <p className="text-green-800">
+                    ✅ Gepostet am: {format(new Date(selectedArticle.postedAt), 'dd.MM.yyyy HH:mm', { locale: de })}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
