@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { signToken } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,30 +12,15 @@ export async function POST(request: NextRequest) {
     console.log(`[AUTH] Login attempt from ${host} (proto: ${proto})`);
 
     if (password === APP_PASSWORD) {
-      // Determine if we're behind HTTPS proxy
-      const isHttps = proto === 'https';
+      // Generate JWT token
+      const token = signToken({ authenticated: true });
 
-      // Cookie options - NO domain attribute = browser uses current host automatically
-      const cookieOptions = {
-        httpOnly: true,
-        secure: isHttps, // Use X-Forwarded-Proto instead of NODE_ENV
-        sameSite: 'none' as const, // Required for proxy setups
-        path: '/',
-        maxAge: 24 * 60 * 60, // 24 hours
-      };
+      console.log(`[AUTH] ✅ Login successful - Token generated`);
 
-      // CRITICAL: Set cookie on RESPONSE, not on cookies() store!
-      // cookies() is for reading, response.cookies is for setting in HTTP headers
-      const response = NextResponse.json({ success: true });
-      response.cookies.set('authenticated', 'true', cookieOptions);
-
-      // Debug: Check Set-Cookie header
-      const setCookieHeader = response.headers.get('set-cookie');
-      console.log(`[AUTH] ✅ Login successful`);
-      console.log(`[AUTH] 🍪 Cookie config: NO DOMAIN (browser auto-sets), secure=${cookieOptions.secure}, sameSite=${cookieOptions.sameSite}, path=${cookieOptions.path}, maxAge=${cookieOptions.maxAge}`);
-      console.log(`[AUTH] 📤 Set-Cookie header: ${setCookieHeader || 'MISSING!'}`);
-
-      return response;
+      return NextResponse.json({
+        success: true,
+        token, // Return token to client
+      });
     } else {
       console.log('[AUTH] ❌ Login failed: Invalid password');
       return NextResponse.json(

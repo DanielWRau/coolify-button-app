@@ -40,6 +40,7 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   message?: string;
+  token?: string; // JWT token for auth responses
 }
 
 export interface PostResponse {

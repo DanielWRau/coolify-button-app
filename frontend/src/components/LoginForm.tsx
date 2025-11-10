@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '@/lib/api';
+import { login, setToken } from '@/lib/api';
 
 export default function LoginForm() {
   const [password, setPassword] = useState('');
@@ -15,7 +15,9 @@ export default function LoginForm() {
 
     try {
       const { data } = await login(password);
-      if (data.success) {
+      if (data.success && data.token) {
+        // Store JWT token in localStorage
+        setToken(data.token);
         navigate('/');
       } else {
         setError('Falsches Passwort');

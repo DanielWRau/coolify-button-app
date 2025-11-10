@@ -8,37 +8,22 @@ import type {
   PostResponse,
 } from '@/types';
 
-// Token management
-const TOKEN_KEY = 'auth_token';
-
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
-export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
-
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add Bearer token to all requests
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// NO interceptor - let React Query and components handle errors
+// This prevents race conditions and redirect loops
 
 // Auth
 export const login = (password: string) =>
   api.post<ApiResponse>('/api/auth/login', { password });
 
-export const logout = () => {
-  removeToken();
-  return Promise.resolve({ data: { success: true } });
-};
+export const logout = () => api.post<ApiResponse>('/api/auth/logout');
 
 // Schedule
 export const getSchedule = () =>
