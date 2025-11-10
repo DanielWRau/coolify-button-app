@@ -60,6 +60,15 @@ async function handler(request: NextRequest) {
     const emailFrom = process.env.EMAIL_FROM || smtpUser;
     const emailTo = process.env.EMAIL_TO;
 
+    console.log('[EMAIL] SMTP Configuration:', {
+      host: smtpHost,
+      port: smtpPort,
+      user: smtpUser,
+      from: emailFrom,
+      to: emailTo,
+      passwordSet: !!smtpPassword,
+    });
+
     if (!smtpHost || !smtpUser || !smtpPassword || !emailTo) {
       return NextResponse.json(
         {
@@ -116,6 +125,13 @@ async function handler(request: NextRequest) {
       subject: `LinkedIn Post: ${topic}`,
       text: `Topic: ${topic}\n\n${postContent}`,
       html: htmlContent,
+    });
+
+    console.log('[EMAIL] ✓ Email sent successfully', {
+      messageId: info.messageId,
+      from: emailFrom,
+      to: emailTo,
+      topic,
     });
 
     return NextResponse.json({
