@@ -11,17 +11,30 @@ export default function Dashboard() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
-  const { data: schedule } = useQuery({
+  const { data: schedule, error } = useQuery({
     queryKey: ['schedule'],
     queryFn: async () => {
-      const res = await getSchedule();
-      return res.data;
+      try {
+        const res = await getSchedule();
+        return res.data;
+      } catch (err: any) {
+        // Redirect to login on 401
+        if (err.response?.status === 401) {
+          navigate('/login');
+        }
+        throw err;
+      }
     },
+    retry: false, // Don't retry on 401
   });
 
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
+      navigate('/login');
+    },
+    onError: () => {
+      // Even on error, redirect to login (session likely invalid)
       navigate('/login');
     },
   });

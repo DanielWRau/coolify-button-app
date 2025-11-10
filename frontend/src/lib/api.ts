@@ -16,31 +16,8 @@ const api = axios.create({
   },
 });
 
-// Response interceptor for authentication errors
-// Only redirect on persistent 401 errors (not during login/logout)
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      const url = error.config?.url || '';
-      const isAuthEndpoint = url.includes('/auth/');
-
-      // Only redirect if:
-      // 1. Not an auth endpoint (login/logout)
-      // 2. Not already on login page
-      // 3. This is a persistent 401 (not a race condition)
-      if (!isAuthEndpoint && !window.location.pathname.includes('/login')) {
-        // Delay to prevent race conditions during logout
-        setTimeout(() => {
-          if (document.visibilityState === 'visible') {
-            window.location.href = '/login';
-          }
-        }, 300);
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+// NO interceptor - let React Query and components handle errors
+// This prevents race conditions and redirect loops
 
 // Auth
 export const login = (password: string) =>
