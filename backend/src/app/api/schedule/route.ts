@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-import { requireAuth } from '@/lib/auth';
+import { extractBearerToken, verifyToken } from '@/lib/jwt';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SCHEDULE_FILE = path.join(DATA_DIR, 'schedule.json');
@@ -23,7 +23,6 @@ async function ensureDataDir() {
 async function getScheduleConfig(): Promise<ScheduleConfig> {
   await ensureDataDir();
 
-  // Try to read from file first
   if (existsSync(SCHEDULE_FILE)) {
     try {
       const data = await readFile(SCHEDULE_FILE, 'utf-8');
@@ -33,7 +32,6 @@ async function getScheduleConfig(): Promise<ScheduleConfig> {
     }
   }
 
-  // Fallback to environment variables
   const topicsStr = process.env.SCHEDULE_TOPICS || '';
   return {
     enabled: process.env.SCHEDULE_ENABLED === 'true',
@@ -48,7 +46,26 @@ async function saveScheduleConfig(config: ScheduleConfig) {
   await writeFile(SCHEDULE_FILE, JSON.stringify(config, null, 2), 'utf-8');
 }
 
-async function getHandler(request: NextRequest) {
+export async function GET(request: NextRequest) {
+  console.log('[SCHEDULE] GET request received');
+  
+  const authHeader = request.headers.get('authorization');
+  console.log('[SCHEDULE] Auth header:', authHeader ? 'Present' : 'MISSING');
+  
+  const token = extractBearerToken(authHeader);
+  if (!token) {
+    console.log('[SCHEDULE] No token found');
+    return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const payload = verifyToken(token);
+  if (!payload || !payload.authenticated) {
+    console.log('[SCHEDULE] Invalid token');
+    return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
+  }
+
+  console.log('[SCHEDULE] Auth successful');
+
   try {
     const config = await getScheduleConfig();
     return NextResponse.json(config);
@@ -61,7 +78,21 @@ async function getHandler(request: NextRequest) {
   }
 }
 
-async function postHandler(request: NextRequest) {
+export async function POST(request: NextRequest) {
+  console.log('[SCHEDULE] POST request received');
+  
+  const authHeader = request.headers.get('authorization');
+  const token = extractBearerToken(authHeader);
+  
+  if (!token) {
+    return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const payload = verifyToken(token);
+  if (!payload || !payload.authenticated) {
+    return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
+  }
+
   try {
     const updates = await request.json();
     const currentConfig = await getScheduleConfig();
@@ -88,6 +119,3 @@ async function postHandler(request: NextRequest) {
     );
   }
 }
-
-export const GET = requireAuth(getHandler);
-export const POST = requireAuth(postHandler);
