@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       const cookieOptions = {
         httpOnly: true,
         secure: isHttps, // Use X-Forwarded-Proto instead of NODE_ENV
-        sameSite: 'lax' as const,
+        sameSite: 'none' as const, // Required for proxy setups
         path: '/',
         maxAge: 24 * 60 * 60, // 24 hours
       };
