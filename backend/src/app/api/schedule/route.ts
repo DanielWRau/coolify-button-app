@@ -141,6 +141,15 @@ export async function POST(request: NextRequest) {
 
     console.log('[SCHEDULE] Config updated:', newConfig);
 
+    // Reinitialize scheduler with new config
+    try {
+      const { reinitializeScheduler } = await import('@/lib/scheduled-poster');
+      await reinitializeScheduler();
+      console.log('[SCHEDULE] Scheduler reinitialized');
+    } catch (error) {
+      console.error('[SCHEDULE] Failed to reinitialize scheduler:', error);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Schedule updated successfully',

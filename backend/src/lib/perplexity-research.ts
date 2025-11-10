@@ -1,7 +1,10 @@
 /**
- * Perplexity AI Research Integration
+ * Perplexity AI Research Integration using Vercel AI SDK v5
  * Provides online search and research capabilities for creating informed LinkedIn posts
  */
+
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 
 export interface ResearchResult {
   summary: string;
@@ -10,7 +13,7 @@ export interface ResearchResult {
 }
 
 /**
- * Performs online research for a topic using Perplexity API
+ * Performs online research for a topic using Perplexity API via Vercel AI SDK
  */
 export async function researchTopic(topic: string): Promise<ResearchResult> {
   const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
@@ -27,68 +30,56 @@ export async function researchTopic(topic: string): Promise<ResearchResult> {
   try {
     console.log('[RESEARCH] Starting research for topic:', topic);
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${perplexityApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online', // Online model for web search
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a research assistant. Provide concise, fact-based summaries with key points and sources for professional LinkedIn content creation.',
-          },
-          {
-            role: 'user',
-            content: `Research current information about: ${topic}
-
-Provide:
-1. A brief summary (2-3 sentences)
-2. 3-5 key points or insights
-3. Current trends or developments
-
-Focus on information relevant for creating an informed LinkedIn post.`,
-          },
-        ],
-        temperature: 0.2, // Low temperature for factual research
-        max_tokens: 500,
-      }),
+    // Create Perplexity provider using OpenAI-compatible API
+    const perplexity = createOpenAI({
+      apiKey: perplexityApiKey,
+      baseURL: 'https://api.perplexity.ai',
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('[RESEARCH] Perplexity API error:', error);
-      throw new Error(`Perplexity API error: ${response.status}`);
-    }
+    const { text, usage } = await generateText({
+      model: perplexity('llama-3.1-sonar-small-128k-online'), // Online model for web search
+      system: 'You are a research assistant. Provide concise, fact-based summaries with key points for professional LinkedIn content creation. Structure your response with: SUMMARY: (2-3 sentences), KEY POINTS: (numbered list of 3-5 points)',
+      prompt: `Research current information about: ${topic}
 
-    const data = await response.json();
-    const content = data.choices[0].message.content;
+Focus on:
+- Current trends and developments
+- Key facts and statistics
+- Industry insights
+- Relevant for professional LinkedIn post
+
+Provide structured response with summary and key points.`,
+      temperature: 0.2, // Low temperature for factual research
+      maxTokens: 500,
+    });
 
     console.log('[RESEARCH] Research completed:', {
       topic,
-      contentLength: content.length,
+      textLength: text.length,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
     });
 
-    // Parse the response to extract key points
-    const lines = content.split('\n').filter((line: string) => line.trim());
+    // Parse structured response
+    const summaryMatch = text.match(/SUMMARY:\s*(.+?)(?=KEY POINTS:|$)/is);
+    const keyPointsMatch = text.match(/KEY POINTS:\s*(.+)$/is);
+
+    const summary = summaryMatch ? summaryMatch[1].trim() : text.substring(0, 200);
+
     const keyPoints: string[] = [];
-
-    lines.forEach((line: string) => {
-      // Extract bullet points or numbered items
-      if (line.match(/^[-•\d.]\s/)) {
-        keyPoints.push(line.replace(/^[-•\d.]\s*/, '').trim());
-      }
-    });
-
-    // Extract sources from citations if available
-    const sources = data.citations || [];
+    if (keyPointsMatch) {
+      const pointsText = keyPointsMatch[1];
+      const lines = pointsText.split('\n');
+      lines.forEach((line: string) => {
+        if (line.match(/^[-•\d.]\s/)) {
+          keyPoints.push(line.replace(/^[-•\d.]\s*/, '').trim());
+        }
+      });
+    }
 
     return {
-      summary: content.substring(0, 200), // First 200 chars as summary
-      sources,
-      keyPoints: keyPoints.slice(0, 5), // Top 5 key points
+      summary,
+      sources: [], // Perplexity doesn't expose citations via OpenAI API
+      keyPoints: keyPoints.slice(0, 5),
     };
   } catch (error: any) {
     console.error('[RESEARCH] Research failed:', error);

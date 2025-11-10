@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone', // Enable standalone output for smaller Docker images
+  experimental: {
+    instrumentationHook: true, // Enable instrumentation for cron scheduler
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
