@@ -11,7 +11,7 @@ export default function Dashboard() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
-  const { data: schedule, error } = useQuery({
+  const { data: schedule } = useQuery({
     queryKey: ['schedule'],
     queryFn: async () => {
       try {
