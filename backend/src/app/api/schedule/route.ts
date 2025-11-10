@@ -7,11 +7,19 @@ import { extractBearerToken, verifyToken } from '@/lib/jwt';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SCHEDULE_FILE = path.join(DATA_DIR, 'schedule.json');
 
+interface PostingTime {
+  hour: number;      // 0-23
+  minute: number;    // 0-59
+  jitterMinutes: number; // ±variance (default: 30)
+}
+
 interface ScheduleConfig {
   enabled: boolean;
-  time: string;
   timezone: string;
   topics: string[];
+  currentTopicIndex: number; // Track position in topic rotation
+  postingTimes: PostingTime[]; // Multiple posting times per day
+  weekdays: boolean[]; // [Mon, Tue, Wed, Thu, Fri, Sat, Sun] - true = enabled
 }
 
 async function ensureDataDir() {
@@ -26,18 +34,41 @@ async function getScheduleConfig(): Promise<ScheduleConfig> {
   if (existsSync(SCHEDULE_FILE)) {
     try {
       const data = await readFile(SCHEDULE_FILE, 'utf-8');
-      return JSON.parse(data);
+      const config = JSON.parse(data);
+
+      // Migrate old format to new format
+      if (config.time && !config.postingTimes) {
+        const [hour, minute] = config.time.split(':').map(Number);
+        config.postingTimes = [{ hour, minute, jitterMinutes: 30 }];
+        delete config.time;
+      }
+
+      // Ensure all fields exist
+      return {
+        enabled: config.enabled ?? false,
+        timezone: config.timezone ?? 'Europe/Berlin',
+        topics: config.topics ?? [],
+        currentTopicIndex: config.currentTopicIndex ?? 0,
+        postingTimes: config.postingTimes ?? [],
+        weekdays: config.weekdays ?? [true, true, true, true, true, false, false], // Mon-Fri default
+      };
     } catch (error) {
       console.error('Error reading schedule file:', error);
     }
   }
 
+  // Default config from env variables (legacy support)
   const topicsStr = process.env.SCHEDULE_TOPICS || '';
+  const timeStr = process.env.SCHEDULE_TIME || '09:00';
+  const [hour, minute] = timeStr.split(':').map(Number);
+
   return {
     enabled: process.env.SCHEDULE_ENABLED === 'true',
-    time: process.env.SCHEDULE_TIME || '09:00',
     timezone: process.env.SCHEDULE_TIMEZONE || 'Europe/Berlin',
     topics: topicsStr ? topicsStr.split(',').map(t => t.trim()).filter(Boolean) : [],
+    currentTopicIndex: 0,
+    postingTimes: [{ hour, minute, jitterMinutes: 30 }],
+    weekdays: [true, true, true, true, true, false, false], // Mon-Fri default
   };
 }
 
@@ -80,10 +111,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   console.log('[SCHEDULE] POST request received');
-  
+
   const authHeader = request.headers.get('authorization');
   const token = extractBearerToken(authHeader);
-  
+
   if (!token) {
     return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
   }
@@ -99,12 +130,16 @@ export async function POST(request: NextRequest) {
 
     const newConfig: ScheduleConfig = {
       enabled: updates.enabled ?? currentConfig.enabled,
-      time: updates.time ?? currentConfig.time,
       timezone: updates.timezone ?? currentConfig.timezone,
       topics: updates.topics ?? currentConfig.topics,
+      currentTopicIndex: updates.currentTopicIndex ?? currentConfig.currentTopicIndex,
+      postingTimes: updates.postingTimes ?? currentConfig.postingTimes,
+      weekdays: updates.weekdays ?? currentConfig.weekdays,
     };
 
     await saveScheduleConfig(newConfig);
+
+    console.log('[SCHEDULE] Config updated:', newConfig);
 
     return NextResponse.json({
       success: true,
@@ -119,3 +154,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export helper for cron job access
+export { getScheduleConfig, saveScheduleConfig };

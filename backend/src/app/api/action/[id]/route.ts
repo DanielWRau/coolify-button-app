@@ -5,6 +5,7 @@ import {
   formatForBrowserUse,
   generateBrowserUseTask,
 } from '@/lib/browser-use-formatter';
+import { researchTopic, createResearchEnhancedPrompt } from '@/lib/perplexity-research';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -53,6 +54,19 @@ async function handler(request: NextRequest, context: RouteContext): Promise<Nex
           );
         }
 
+        // STEP 1: Research topic with Perplexity (online search)
+        console.log('[POST] Step 1: Researching topic with Perplexity...');
+        const research = await researchTopic(topic);
+        console.log('[POST] Research completed:', {
+          hasResearch: !!research.summary,
+          keyPointsCount: research.keyPoints.length,
+          sourcesCount: research.sources.length,
+        });
+
+        // STEP 2: Generate post with research-enhanced prompt
+        console.log('[POST] Step 2: Generating post with AI...');
+        const enhancedPrompt = createResearchEnhancedPrompt(BROWSER_USE_SYSTEM_PROMPT, research);
+
         const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -64,7 +78,7 @@ async function handler(request: NextRequest, context: RouteContext): Promise<Nex
             messages: [
               {
                 role: 'system',
-                content: BROWSER_USE_SYSTEM_PROMPT
+                content: enhancedPrompt
               },
               {
                 role: 'user',
