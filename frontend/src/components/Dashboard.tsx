@@ -185,27 +185,6 @@ export default function Dashboard() {
                   <span className="text-sm font-medium text-gray-700">Zeit:</span>
                   <span className="text-sm text-gray-600">{schedule.time} {schedule.timezone}</span>
                 </div>
-
-                <div>
-                  <span className="text-sm font-medium text-gray-700 block mb-2">
-                    Themen ({schedule.topics.length}):
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {schedule.topics.slice(0, 3).map((topic, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded"
-                      >
-                        {topic}
-                      </span>
-                    ))}
-                    {schedule.topics.length > 3 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                        +{schedule.topics.length - 3} mehr
-                      </span>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
           </div>
