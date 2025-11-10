@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
+import {
+  BROWSER_USE_SYSTEM_PROMPT,
+  formatForBrowserUse,
+  generateBrowserUseTask,
+} from '@/lib/browser-use-formatter';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -59,7 +64,7 @@ async function handler(request: NextRequest, context: RouteContext): Promise<Nex
             messages: [
               {
                 role: 'system',
-                content: 'You are a professional LinkedIn content creator. Create engaging, professional LinkedIn posts in plain text. Use line breaks, emojis, and clear structure. No HTML, no Markdown formatting. Keep it concise and impactful.'
+                content: BROWSER_USE_SYSTEM_PROMPT
               },
               {
                 role: 'user',
@@ -75,7 +80,15 @@ async function handler(request: NextRequest, context: RouteContext): Promise<Nex
 
         const aiData = await aiResponse.json();
         postContent = aiData.choices[0].message.content;
+
+        console.log('[AI] Generated post content:', postContent);
       }
+
+      // Format post content for Browser-Use step-by-step typing
+      const formattedContent = formatForBrowserUse(postContent);
+      const browserUseTask = generateBrowserUseTask(linkedinEmail, linkedinPassword, formattedContent);
+
+      console.log('[BROWSER-USE] Task instructions:', browserUseTask);
 
       // Call Browser-Use API to post to LinkedIn
       const browserUseResponse = await fetch('https://api.browser-use.com/api/v1/run-task', {
@@ -85,7 +98,7 @@ async function handler(request: NextRequest, context: RouteContext): Promise<Nex
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          task: `Log into LinkedIn with email ${linkedinEmail} and password ${linkedinPassword}. Once logged in, click "Start a post" to create a new post. Copy the following text to your clipboard and paste it using Ctrl+V in the post editor: "${postContent}". Then click the "Post" button to publish.`,
+          task: browserUseTask,
           timeout: 180000, // 3 minutes
         }),
       });

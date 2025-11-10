@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAuth } from '@/lib/auth';
 import { getArticle, updateArticle } from '@/lib/article-storage';
+import {
+  formatForBrowserUse,
+  generateBrowserUseTask,
+} from '@/lib/browser-use-formatter';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -41,19 +45,20 @@ export async function POST(request: NextRequest, context: RouteParams) {
       );
     }
 
-    // Post article to LinkedIn via Browser-Use
-    // LinkedIn Articles are different from posts - they're long-form content
-    // Note: LinkedIn has a "Write article" button that opens an article editor
-    const task = `Log into LinkedIn with email ${linkedinEmail} and password ${linkedinPassword}. Then click on "Write article" to open the article editor. Create a new article with the title "${article.topic}" and paste this content: "${article.content}". Publish the article.`;
+    // Format article content for Browser-Use step-by-step typing
+    const formattedContent = formatForBrowserUse(article.content);
+    const browserUseTask = generateBrowserUseTask(linkedinEmail, linkedinPassword, formattedContent);
 
-    const browserUseResponse = await fetch('https://api.browser-use.com/v1/tasks', {
+    console.log('[BROWSER-USE] Article posting task:', browserUseTask);
+
+    const browserUseResponse = await fetch('https://api.browser-use.com/api/v1/run-task', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${browserUseApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        task,
+        task: browserUseTask,
         timeout: 300000, // 5 minutes for article posting
       }),
     });
