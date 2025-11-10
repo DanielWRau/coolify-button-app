@@ -85,7 +85,7 @@ async function handler(request: NextRequest, context: RouteContext): Promise<Nex
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          task: `Log into LinkedIn with email ${linkedinEmail} and password ${linkedinPassword}, then create a new post with this text: "${postContent}"`,
+          task: `Log into LinkedIn with email ${linkedinEmail} and password ${linkedinPassword}. Once logged in, click "Start a post" to create a new post. Copy the following text to your clipboard and paste it using Ctrl+V in the post editor: "${postContent}". Then click the "Post" button to publish.`,
           timeout: 180000, // 3 minutes
         }),
       });
