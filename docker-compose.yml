@@ -39,7 +39,7 @@ services:
       - coolify
 
   frontend:
-    image: ghcr.io/danielwrau/coolify-button-app-frontend:latest
+    image: ghcr.io/danielwrau/coolify-button-app-frontend:main-bb674b9
     expose:
       - "80"
     depends_on:
