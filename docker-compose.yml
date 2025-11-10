@@ -57,10 +57,11 @@ services:
     labels:
       - "coolify.managed=true"
       - "traefik.enable=true"
-      - "traefik.http.routers.coolify-button-frontend.rule=Host(`action.a-g-e-n-t.de`)"
-      - "traefik.http.routers.coolify-button-frontend.entrypoints=websecure"
-      - "traefik.http.routers.coolify-button-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.coolify-button-frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.action-buttons-frontend.rule=Host(`action.a-g-e-n-t.de`)"
+      - "traefik.http.routers.action-buttons-frontend.entrypoints=websecure"
+      - "traefik.http.routers.action-buttons-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.action-buttons-frontend.priority=100"
+      - "traefik.http.services.action-buttons-frontend.loadbalancer.server.port=80"
 
 volumes:
   backend-data:
