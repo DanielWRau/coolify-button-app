@@ -27,6 +27,19 @@ export default function ArticlesList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Helper: format ISO date to input[type="datetime-local"] value (YYYY-MM-DDTHH:mm)
+  const formatDateTimeLocal = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  };
+
   const { data: articlesData, isLoading } = useQuery({
     queryKey: ['articles'],
     queryFn: async () => {
@@ -327,7 +340,13 @@ export default function ArticlesList() {
                             📅 Geplant für: {format(new Date(article.scheduledFor), 'dd.MM.yyyy HH:mm', { locale: de })}
                           </div>
                           <button
-                            onClick={() => setEditingSchedule(article.id)}
+                            onClick={() => {
+                              setEditingSchedule(article.id);
+                              if (article.scheduledFor) {
+                                const v = formatDateTimeLocal(article.scheduledFor);
+                                setScheduleDate((prev) => ({ ...prev, [article.id]: v }));
+                              }
+                            }}
                             className="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                           >
                             <Edit size={14} />

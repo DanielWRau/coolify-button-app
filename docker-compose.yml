@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: ghcr.io/danielwrau/coolify-button-app-backend:latest
+    image: ghcr.io/danielwrau/coolify-button-app-backend:main-54c721f
     expose:
       - "3001"
     environment:

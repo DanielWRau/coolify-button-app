@@ -16,11 +16,19 @@ export interface Article {
   taskId?: string;
 }
 
+export interface PostingTime {
+  hour: number;
+  minute: number;
+  jitterMinutes: number;
+}
+
 export interface ScheduleConfig {
   enabled: boolean;
-  time: string;
   timezone: string;
   topics: string[];
+  currentTopicIndex: number;
+  postingTimes: PostingTime[];
+  weekdays: boolean[]; // [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
 }
 
 export interface GeneratePostRequest {

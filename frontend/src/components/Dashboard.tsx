@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { LogOut, Mail, Send, FileText, Calendar } from 'lucide-react';
+import { LogOut, Mail, Send, FileText, Calendar, Settings } from 'lucide-react';
 import { logout, getSchedule, generatePostEmail, postAction } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import type { GeneratePostRequest } from '@/types';
@@ -169,22 +169,41 @@ export default function Dashboard() {
             </div>
 
             {schedule && (
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Status:</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    schedule.enabled
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {schedule.enabled ? 'Aktiv' : 'Inaktiv'}
-                  </span>
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Status:</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      schedule.enabled
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {schedule.enabled ? 'Aktiv' : 'Inaktiv'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Themen:</span>
+                    <span className="text-sm text-gray-600">
+                      {schedule.topics?.length || 0} konfiguriert
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Posting-Zeiten:</span>
+                    <span className="text-sm text-gray-600">
+                      {schedule.postingTimes?.length || 0} pro Tag
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Zeit:</span>
-                  <span className="text-sm text-gray-600">{schedule.time} {schedule.timezone}</span>
-                </div>
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  <Settings size={18} />
+                  Einstellungen verwalten
+                </button>
               </div>
             )}
           </div>
