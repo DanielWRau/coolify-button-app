@@ -48,7 +48,7 @@ async function saveScheduleConfig(config: ScheduleConfig) {
   await writeFile(SCHEDULE_FILE, JSON.stringify(config, null, 2), 'utf-8');
 }
 
-async function getHandler() {
+async function getHandler(request: NextRequest) {
   try {
     const config = await getScheduleConfig();
     return NextResponse.json(config);
