@@ -48,14 +48,15 @@ OUTPUT FORMAT:
 Plain text only. Each section on a new line. No markdown, no HTML.`;
 
 /**
- * Generates Browser-Use task instruction with step-by-step typing
+ * Generates Browser-Use task instruction with login and step-by-step typing
  */
 export function generateBrowserUseTask(
   linkedinEmail: string,
   linkedinPassword: string,
   formattedContent: string
 ): string {
-  return `Öffne https://www.linkedin.com/feed/.
+  return `Log into LinkedIn with email ${linkedinEmail} and password ${linkedinPassword}.
+Once logged in, navigate to https://www.linkedin.com/feed/.
 Klicke in den Post-Composer (div[role="textbox"]).
 ${formattedContent}
 Klicke anschließend auf „Posten".`;
