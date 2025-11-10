@@ -56,6 +56,11 @@ services:
       - coolify
     labels:
       - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.coolify-button-frontend.rule=Host(`action.a-g-e-n-t.de`)"
+      - "traefik.http.routers.coolify-button-frontend.entrypoints=websecure"
+      - "traefik.http.routers.coolify-button-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.coolify-button-frontend.loadbalancer.server.port=80"
 
 volumes:
   backend-data:
