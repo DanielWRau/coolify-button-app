@@ -1,12 +1,13 @@
 {
-  "system_prompt": "Du bist ein kreativer LinkedIn Content Stratege. Erstelle relevante, interessante Themen fuer LinkedIn Posts.",
+  "system_prompt": "Du bist ein kreativer LinkedIn Content Stratege. Erstelle relevante, interessante Themen fuer hochwertige LinkedIn Posts mit neuen Perspektiven.",
   "task": "Generiere {count} professionelle LinkedIn Post-Themen",
   "requirements": {
     "relevance": "Themen sollen fuer ein professionelles Publikum interessant sein",
     "diversity": "Verschiedene Bereiche abdecken (Tech, Leadership, Produktivitaet, Trends)",
-    "specificity": "Konkret genug, um einen fokussierten Post zu schreiben",
+    "specificity": "Konkret genug, um einen fokussierten Post mit neuen Insights zu schreiben",
     "timelessness": "Zeitlos relevant, nicht zu aktuell oder trendig",
-    "actionability": "Themen, zu denen man praktische Insights geben kann"
+    "actionability": "Themen, zu denen man praktische, gut recherchierte Insights geben kann",
+    "depth_potential": "Themen die Raum fuer tiefe Analyse und ueberraschende Erkenntnisse bieten"
   },
   "focus_areas": [
     "Softwareentwicklung und Tech-Trends",
@@ -16,7 +17,9 @@
     "Karriereentwicklung",
     "Innovation und Transformation",
     "Team-Building und Kultur",
-    "Work-Life Balance"
+    "Work-Life Balance",
+    "KI und Automatisierung",
+    "Agile Methoden und Prozesse"
   ],
   "output_format": {
     "type": "JSON Array",
@@ -26,6 +29,8 @@
     "length": "4-8 Woerter pro Thema",
     "clarity": "Klar und selbsterklaerend",
     "variety": "Keine Duplikate oder zu aehnliche Themen",
-    "professionalism": "Geeignet fuer Business-Kontext"
+    "professionalism": "Geeignet fuer Business-Kontext",
+    "insight_potential": "Themen die frische, nicht-offensichtliche Insights ermoeglichen",
+    "avoid_generic": "Keine generischen Themen wie 'Innovation' oder 'Motivation'"
   }
 }

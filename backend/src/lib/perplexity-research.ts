@@ -5,6 +5,8 @@
 
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { readFile } from 'fs/promises';
+import path from 'path';
 
 export interface ResearchResult {
   summary: string;
@@ -117,4 +119,108 @@ ${research.sources.length > 0 ? `SOURCES: ${research.sources.slice(0, 3).join(',
 ${researchContext}
 
 Use the research context above to create an informed, fact-based LinkedIn post.`;
+}
+
+/**
+ * Loads prompt configuration from JSON files
+ */
+async function loadPromptConfig(promptType: 'manual' | 'scheduled'): Promise<any> {
+  const promptFile = promptType === 'manual'
+    ? 'linkedin-post-structure.json'
+    : 'scheduled-posts-prompt.json';
+
+  const promptPath = path.join(process.cwd(), 'prompts', promptFile);
+
+  try {
+    const content = await readFile(promptPath, 'utf-8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.error(`[PROMPT] Failed to load ${promptFile}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Generates a complete LinkedIn post using Perplexity via OpenRouter with research and formatting in one call
+ */
+export async function generateLinkedInPost(
+  topic: string,
+  promptType: 'manual' | 'scheduled' = 'manual'
+): Promise<string> {
+  const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!openrouterApiKey) {
+    throw new Error('OpenRouter API key not configured');
+  }
+
+  // Load prompt configuration
+  const promptConfig = await loadPromptConfig(promptType);
+  if (!promptConfig) {
+    throw new Error('Failed to load prompt configuration');
+  }
+
+  // Build comprehensive system prompt from JSON config
+  const systemPrompt = `${promptConfig.system_prompt}
+
+STRUKTUR:
+${Object.entries(promptConfig.post_structure).map(([key, value]) => `${key}: ${value}`).join('\n')}
+
+RICHTLINIEN:
+${Object.entries(promptConfig.guidelines).map(([key, value]) => `${key}: ${value}`).join('\n')}
+
+CONTENT ANFORDERUNGEN:
+${Object.entries(promptConfig.content_requirements || {}).map(([key, value]) => `${key}: ${value}`).join('\n')}
+
+VERBOTEN:
+${Object.entries(promptConfig.forbidden || {}).map(([key, value]) => `${key}: ${value}`).join('\n')}
+
+WICHTIG:
+- Formatiere den Post EXAKT wie beschrieben
+- Jede Zeile ist ein separater Absatz
+- Hashtags am Ende nach Leerzeile
+- MAX 1300 Zeichen
+- Verwende KEINE Markdown-Formatierung (kein **, __, etc.)
+- Plain text only`;
+
+  const userPrompt = `Recherchiere aktuelle Informationen zum Thema und erstelle einen professionellen LinkedIn Post:
+
+Thema: ${topic}
+
+Recherchiere:
+- Aktuelle Trends und Entwicklungen
+- Konkrete Fakten, Studien, Zahlen
+- Neue, ueberraschende Insights
+- Praktische Erkenntnisse
+
+Erstelle dann direkt den fertigen LinkedIn Post nach den Struktur-Vorgaben.`;
+
+  try {
+    console.log('[PERPLEXITY] Generating LinkedIn post with research via OpenRouter...');
+
+    // Use OpenRouter with Perplexity model
+    const openrouter = createOpenAI({
+      apiKey: openrouterApiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+    });
+
+    const { text, usage } = await generateText({
+      model: openrouter('perplexity/llama-3.1-sonar-large-128k-online'), // Perplexity via OpenRouter
+      system: systemPrompt,
+      prompt: userPrompt,
+      temperature: 0.7,
+      maxTokens: 800,
+    });
+
+    console.log('[PERPLEXITY] Post generated via OpenRouter:', {
+      topic,
+      length: text.length,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+    });
+
+    return text.trim();
+  } catch (error: any) {
+    console.error('[PERPLEXITY] Post generation failed:', error);
+    throw new Error(`Failed to generate LinkedIn post: ${error.message}`);
+  }
 }

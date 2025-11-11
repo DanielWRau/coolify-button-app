@@ -43,13 +43,19 @@ async function getScheduleConfig(): Promise<ScheduleConfig> {
         delete config.time;
       }
 
-      // Ensure all fields exist
+      // Ensure all fields exist with safe defaults
+      let postingTimes = config.postingTimes ?? [];
+      if (postingTimes.length === 0) {
+        postingTimes = [{ hour: 9, minute: 0, jitterMinutes: 30 }];
+        console.log('[SCHEDULE] Empty posting times, using default');
+      }
+
       return {
         enabled: config.enabled ?? false,
         timezone: config.timezone ?? 'Europe/Berlin',
         topics: config.topics ?? [],
         currentTopicIndex: config.currentTopicIndex ?? 0,
-        postingTimes: config.postingTimes ?? [],
+        postingTimes,
         weekdays: config.weekdays ?? [true, true, true, true, true, false, false], // Mon-Fri default
       };
     } catch (error) {
@@ -128,12 +134,19 @@ export async function POST(request: NextRequest) {
     const updates = await request.json();
     const currentConfig = await getScheduleConfig();
 
+    // Ensure postingTimes always has at least one entry
+    let postingTimes = updates.postingTimes ?? currentConfig.postingTimes;
+    if (!postingTimes || postingTimes.length === 0) {
+      postingTimes = [{ hour: 9, minute: 0, jitterMinutes: 30 }];
+      console.log('[SCHEDULE] No posting times provided, using default');
+    }
+
     const newConfig: ScheduleConfig = {
       enabled: updates.enabled ?? currentConfig.enabled,
       timezone: updates.timezone ?? currentConfig.timezone,
       topics: updates.topics ?? currentConfig.topics,
       currentTopicIndex: updates.currentTopicIndex ?? currentConfig.currentTopicIndex,
-      postingTimes: updates.postingTimes ?? currentConfig.postingTimes,
+      postingTimes,
       weekdays: updates.weekdays ?? currentConfig.weekdays,
     };
 

@@ -133,43 +133,12 @@ async function postToLinkedIn(topic: string): Promise<void> {
     }
 
     // Import action logic
-    const { researchTopic, createResearchEnhancedPrompt } = await import('./perplexity-research');
-    const { BROWSER_USE_SYSTEM_PROMPT, formatForBrowserUse, generateBrowserUseTask } = await import('./browser-use-formatter');
+    const { generateLinkedInPost } = await import('./perplexity-research');
+    const { formatForBrowserUse, generateBrowserUseTask } = await import('./browser-use-formatter');
 
-    // Research topic
-    const research = await researchTopic(topic);
-
-    // Generate post with AI
-    const openrouterApiKey = process.env.OPENROUTER_API_KEY;
-    const model = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
-
-    if (!openrouterApiKey) {
-      throw new Error('OpenRouter API key not configured');
-    }
-
-    const enhancedPrompt = createResearchEnhancedPrompt(BROWSER_USE_SYSTEM_PROMPT, research);
-
-    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openrouterApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: enhancedPrompt },
-          { role: 'user', content: `Create a LinkedIn post about: ${topic}` },
-        ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      throw new Error('AI generation failed');
-    }
-
-    const aiData = await aiResponse.json();
-    const postContent = aiData.choices[0].message.content;
+    // Generate post with Perplexity (research + formatting)
+    console.log('[SCHEDULED] Generating post with Perplexity...');
+    const postContent = await generateLinkedInPost(topic, 'scheduled');
 
     // Post via Browser-Use
     const formattedContent = formatForBrowserUse(postContent);
