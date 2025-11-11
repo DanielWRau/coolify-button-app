@@ -201,7 +201,7 @@ Erstelle dann direkt den fertigen LinkedIn Post nach den Struktur-Vorgaben.`;
     });
 
     const { text } = await generateText({
-      model: openrouter('perplexity/llama-3.1-sonar-large-128k-online'), // Perplexity via OpenRouter
+      model: openrouter('perplexity/sonar'), // Perplexity Sonar via OpenRouter
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.7,
