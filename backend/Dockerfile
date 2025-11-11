@@ -4,10 +4,12 @@ FROM node:20-alpine AS builder
 # Use /build as working directory to ensure consistent output structure
 WORKDIR /build
 
-# Copy everything from root context
-COPY . .
+# Copy backend files and prompts from root context
+COPY backend/package*.json ./
+COPY backend/ ./
+COPY prompts ./prompts
 
-# Install dependencies (after copying package.json)
+# Install dependencies
 RUN npm ci
 
 # Build the app
