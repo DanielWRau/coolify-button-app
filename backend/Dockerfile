@@ -4,14 +4,11 @@ FROM node:20-alpine AS builder
 # Use /build as working directory to ensure consistent output structure
 WORKDIR /build
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy source code
+# Copy everything from root context
 COPY . .
+
+# Install dependencies (after copying package.json)
+RUN npm ci
 
 # Build the app
 RUN npm run build
