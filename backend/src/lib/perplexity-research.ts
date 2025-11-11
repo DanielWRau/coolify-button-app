@@ -51,19 +51,16 @@ Focus on:
 
 Provide structured response with summary and key points.`,
       temperature: 0.2, // Low temperature for factual research
-      maxTokens: 500,
     });
 
     console.log('[RESEARCH] Research completed:', {
       topic,
       textLength: text.length,
-      promptTokens: usage.promptTokens,
-      completionTokens: usage.completionTokens,
     });
 
     // Parse structured response
-    const summaryMatch = text.match(/SUMMARY:\s*(.+?)(?=KEY POINTS:|$)/is);
-    const keyPointsMatch = text.match(/KEY POINTS:\s*(.+)$/is);
+    const summaryMatch = text.match(/SUMMARY:\s*(.+?)(?=KEY POINTS:|$)/i);
+    const keyPointsMatch = text.match(/KEY POINTS:\s*(.+)$/i);
 
     const summary = summaryMatch ? summaryMatch[1].trim() : text.substring(0, 200);
 
@@ -203,19 +200,16 @@ Erstelle dann direkt den fertigen LinkedIn Post nach den Struktur-Vorgaben.`;
       baseURL: 'https://openrouter.ai/api/v1',
     });
 
-    const { text, usage } = await generateText({
+    const { text } = await generateText({
       model: openrouter('perplexity/llama-3.1-sonar-large-128k-online'), // Perplexity via OpenRouter
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.7,
-      maxTokens: 800,
     });
 
     console.log('[PERPLEXITY] Post generated via OpenRouter:', {
       topic,
       length: text.length,
-      promptTokens: usage.promptTokens,
-      completionTokens: usage.completionTokens,
     });
 
     return text.trim();

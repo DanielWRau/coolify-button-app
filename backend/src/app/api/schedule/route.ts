@@ -176,6 +176,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Export helper for cron job access
-export { getScheduleConfig, saveScheduleConfig };
