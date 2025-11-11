@@ -265,7 +265,13 @@ export async function initializeScheduler(): Promise<void> {
  */
 export function stopScheduler(): void {
   console.log('[CRON] Stopping scheduler...');
-  scheduledJobs.forEach(job => job.stop());
+  if (scheduledJobs && Array.isArray(scheduledJobs)) {
+    scheduledJobs.forEach(job => {
+      if (job && typeof job.stop === 'function') {
+        job.stop();
+      }
+    });
+  }
   scheduledJobs = [];
   console.log('[CRON] ✓ Scheduler stopped');
 }
