@@ -28,6 +28,7 @@ WORKDIR /app
 COPY --from=builder /build/.next/standalone ./
 COPY --from=builder /build/.next/static ./.next/static
 COPY --from=builder /build/public ./public
+COPY --from=builder /build/prompts ./prompts
 
 # Create data directory
 RUN mkdir -p /app/data
