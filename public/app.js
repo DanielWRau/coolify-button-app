@@ -1,3 +1,35 @@
+// Navigation Logic
+function showLeistungsbeschreibung(event) {
+  event.preventDefault();
+
+  // Hide dashboard, show leistungsbeschreibung
+  document.getElementById('dashboard-screen').style.display = 'none';
+  document.getElementById('leistungsbeschreibung-screen').style.display = 'block';
+
+  // Update active menu item
+  document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+  event.target.closest('.menu-item').classList.add('active');
+}
+
+function showDashboard() {
+  // Show dashboard, hide leistungsbeschreibung
+  document.getElementById('dashboard-screen').style.display = 'flex';
+  document.getElementById('leistungsbeschreibung-screen').style.display = 'none';
+
+  // Update active menu item
+  document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+  document.querySelector('.menu-item:first-child').classList.add('active');
+}
+
+// Initialize page - ensure only dashboard is visible
+document.addEventListener('DOMContentLoaded', () => {
+  const dashboardScreen = document.getElementById('dashboard-screen');
+  const leistungScreen = document.getElementById('leistungsbeschreibung-screen');
+
+  if (dashboardScreen) dashboardScreen.style.display = 'flex';
+  if (leistungScreen) leistungScreen.style.display = 'none';
+});
+
 // Button click handlers
 document.querySelectorAll('.button-item').forEach(button => {
   button.addEventListener('click', async () => {

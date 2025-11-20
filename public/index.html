@@ -9,8 +9,40 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h2>Dashboard</h2>
+    </div>
+    <ul class="sidebar-menu">
+      <li class="menu-item active">
+        <a href="#" onclick="showDashboard(); return false;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <span>Buttons</span>
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="#" onclick="showLeistungsbeschreibung(event)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span>Leistungsbeschreibung</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
   <!-- Dashboard Screen -->
-  <div id="dashboard-screen" class="screen">
+  <div id="dashboard-screen" class="screen main-content">
     <div class="button-grid">
       <!-- Button 1: LinkedIn Post Generator -->
       <div class="button-item" data-action="1">
@@ -101,6 +133,121 @@
     </div>
     
     <div id="toast" class="toast"></div>
+  </div>
+
+  <!-- Leistungsbeschreibung Screen -->
+  <div id="leistungsbeschreibung-screen" class="screen main-content" style="display: none;">
+    <div class="content-wrapper">
+      <h1>Leistungsbeschreibung</h1>
+
+      <section class="description-section">
+        <h2>Projektübersicht</h2>
+        <p>
+          Dieses Dashboard ist eine sichere Button-Anwendung mit iPhone-Style UI,
+          JWT-Authentifizierung und automatisierter LinkedIn-Post-Veröffentlichung
+          über die Browser-Use API.
+        </p>
+      </section>
+
+      <section class="description-section">
+        <h2>Technologie-Stack</h2>
+        <ul>
+          <li><strong>Backend:</strong> Next.js 15 App Router + TypeScript</li>
+          <li><strong>Frontend:</strong> React 18 + Vite + TypeScript</li>
+          <li><strong>Deployment:</strong> Docker Multi-Service mit Nginx Reverse Proxy</li>
+          <li><strong>Authentifizierung:</strong> JWT-basiert mit 24h Gültigkeit</li>
+        </ul>
+      </section>
+
+      <section class="description-section">
+        <h2>Hauptfunktionen</h2>
+
+        <div class="feature-card">
+          <h3>🔹 LinkedIn Post Generator (Button 1)</h3>
+          <p>Generiert und veröffentlicht AI-gesteuerte LinkedIn-Posts zu beliebigen Themen.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>📧 Email Post (Button 2)</h3>
+          <p>Generiert LinkedIn-Posts und versendet diese per SMTP-Email.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>⚙️ Einstellungen (Button 6)</h3>
+          <p>
+            Konfiguration für geplante Posts:
+            <ul>
+              <li>Zeitplanung (täglich zur konfigurierten Zeit)</li>
+              <li>Themenverwaltung</li>
+              <li>AI-Themenvorschläge</li>
+              <li>Artikel-Management-System</li>
+            </ul>
+          </p>
+        </div>
+      </section>
+
+      <section class="description-section">
+        <h2>Artikel-Management</h2>
+        <p>
+          Das System verfügt über ein vollständiges Artikel-Management mit:
+        </p>
+        <ul>
+          <li>AI-gestützter Artikel-Generierung (kurz/mittel/lang)</li>
+          <li>Artikel-Speicherung mit Status-Tracking (draft → scheduled → posted)</li>
+          <li>Zeitplanung für automatische Veröffentlichung</li>
+          <li>Cron-Job für geplante Posts (alle 5 Minuten)</li>
+        </ul>
+      </section>
+
+      <section class="description-section">
+        <h2>Sicherheitsmerkmale</h2>
+        <ul>
+          <li>Session-basierte Authentifizierung</li>
+          <li>Sichere Cookies (httpOnly, secure in Production)</li>
+          <li>24-Stunden Session-Ablauf</li>
+          <li>Reverse-Proxy-Kompatibilität</li>
+        </ul>
+      </section>
+
+      <section class="description-section">
+        <h2>Deployment</h2>
+        <p>
+          Die Anwendung läuft auf Coolify mit automatischer Docker-Bereitstellung:
+        </p>
+        <ul>
+          <li>GitHub Actions für CI/CD</li>
+          <li>Multi-Container Docker Setup</li>
+          <li>Nginx als Reverse Proxy</li>
+          <li>Zeitzone: Europe/Berlin (MEZ/MESZ)</li>
+        </ul>
+      </section>
+
+      <section class="description-section">
+        <h2>API-Endpunkte</h2>
+        <div class="api-list">
+          <div class="api-item">
+            <code>POST /auth/login</code>
+            <span>Authentifizierung</span>
+          </div>
+          <div class="api-item">
+            <code>POST /api/action/1</code>
+            <span>LinkedIn Post erstellen</span>
+          </div>
+          <div class="api-item">
+            <code>GET /api/schedule</code>
+            <span>Zeitplan abrufen</span>
+          </div>
+          <div class="api-item">
+            <code>POST /api/articles/generate</code>
+            <span>Artikel generieren</span>
+          </div>
+          <div class="api-item">
+            <code>GET /api/articles</code>
+            <span>Artikel auflisten</span>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <!-- Input Modal for Button 1 -->
